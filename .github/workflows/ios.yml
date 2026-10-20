@@ -14,6 +14,20 @@ jobs:
       - run: npm ci && npm run build && npx cap sync ios && sed -i '' 's/\.iOS(\.v14)/.iOS(.v15)/' ios/App/CapApp-SPM/Package.swift
       - name: Wire local plugins + widget extension
         run: gem install xcodeproj --user-install --no-document >/dev/null && ruby -e 'Gem.paths' && ruby ios/App/scripts/add_native.rb
+      - name: Simulator launch check (screenshot + crash logs)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath $RUNNER_TEMP/sim CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|BUILD" || true
+          APP=$(ls -d $RUNNER_TEMP/sim/Build/Products/Debug-iphonesimulator/App.app)
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print([x['udid'] for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']][-1])")
+          xcrun simctl boot $UDID; xcrun simctl bootstatus $UDID -b >/dev/null
+          xcrun simctl install $UDID "$APP"; xcrun simctl launch $UDID com.baroodlabs.cycleclear; sleep 20
+          mkdir -p sim; xcrun simctl io $UDID screenshot sim/launch.png
+          xcrun simctl spawn $UDID launchctl list | grep -i cycleclear && echo "SIM_ALIVE" || echo "SIM_NOT_RUNNING"
+          xcrun simctl spawn $UDID log show --last 2m --predicate 'process == "App"' --style compact 2>/dev/null | grep -iE "fatal|crash|exception|error|capacitor|⚡" | head -60 || true
+          ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i App && cat ~/Library/Logs/DiagnosticReports/App*.ips 2>/dev/null | head -120 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: sim-launch, path: sim/, retention-days: 14 }
       - name: Install signing + API key (from encrypted secrets; nothing echoed)
         env: { P12: "${{ secrets.IOS_P12_B64 }}", P12_PASS: "${{ secrets.IOS_P12_PASS }}", KEY: "${{ secrets.ASC_KEY_P8_B64 }}", PROFILE: "${{ secrets.IOS_PROFILE_B64 }}", WPROFILE: "${{ secrets.IOS_WIDGET_PROFILE_B64 }}" }
         run: |
@@ -44,6 +58,14 @@ jobs:
           xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist -exportPath $RUNNER_TEMP/out 2>&1 | grep -E "error|EXPORT" 
           ls -la $RUNNER_TEMP/out
           unzip -l $RUNNER_TEMP/out/*.ipa | grep -E "appex|\.app/App$" || true
+      - name: Inspect IPA (plist, entitlements, bundle contents; no secrets)
+        run: |
+          cd $RUNNER_TEMP && rm -rf ipa && mkdir ipa && cd ipa && unzip -q ../out/*.ipa && A=Payload/App.app
+          plutil -p $A/Info.plist | grep -E "Usage|MinimumOS|CFBundleIdentifier|DisplayName|Version"
+          echo "--app ent"; codesign -d --entitlements - --xml $A 2>/dev/null | plutil -p - 
+          echo "--profile ent"; security cms -D -i $A/embedded.mobileprovision | plutil -extract Entitlements xml1 -o - - | plutil -p -
+          ls $A/public | head; ls $A | grep -iE "config|plist|appex|Plugins"
+          W=$(ls -d $A/PlugIns/*.appex | head -1); plutil -p $W/Info.plist | grep -E "Identifier|NSExtension|Minimum" ; echo "--widget ent"; codesign -d --entitlements - --xml $W 2>/dev/null | plutil -p -
       - name: Upload to TestFlight (no review, no release)
         if: ${{ inputs.upload }}
         env: { KID: "${{ secrets.ASC_KEY_ID }}", ISS: "${{ secrets.ASC_ISSUER_ID }}" }
