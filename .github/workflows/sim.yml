@@ -18,7 +18,7 @@ jobs:
           APP=$(ls -d $RUNNER_TEMP/sim/Build/Products/Debug-iphonesimulator/App.app)
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print([x['udid'] for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']][-1])")
           mkdir -p sim; xcrun simctl boot $UDID; xcrun simctl bootstatus $UDID -b >/dev/null
-          xcrun simctl install $UDID "$APP"; ( xcrun simctl launch --console-pty $UDID com.baroodlabs.cycleclear > sim/console.txt 2>&1 & ); sleep 25
+          xcrun simctl install $UDID "$APP"; ( xcrun simctl launch --console-pty $UDID com.baroodlabs.cycleclear > sim/console.txt 2>&1 & ); sleep 40
           xcrun simctl io $UDID screenshot sim/launch.png
           xcrun simctl spawn $UDID launchctl list | grep -i cycleclear && echo "SIM_ALIVE" || echo "SIM_NOT_RUNNING"
           xcrun simctl spawn $UDID log show --last 2m --predicate 'process == "App"' --style compact 2>/dev/null | grep -iE "fatal|crash|exception|error|capacitor|⚡" | head -60 || true
