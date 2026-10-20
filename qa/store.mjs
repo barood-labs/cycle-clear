@@ -13,6 +13,8 @@ for (const lang of ['en', 'ar']) {
   await p.goto(`${U}?lang=${lang}`); await p.click('#accept'); await p.click('.mode[data-m=track]'); await p.click('#go'); await p.waitForSelector('#mark');
   await p.click('[data-tab=settings]'); await p.setInputFiles('#imp', '/tmp/cc_store.json'); await p.waitForTimeout(500);
   await p.addStyleTag({ content: '#toast{display:none!important}' });
+  { const code = (await import('node:fs')).readFileSync('private/pro_codes.txt','utf8').split('\n').map(s=>s.trim()).filter(s=>/^[A-Z0-9-]{8,}$/.test(s))[3];
+    await p.evaluate(() => { location.hash = '#/pro'; }); await p.waitForSelector('#code'); await p.fill('#code', code); await p.click('#redeem'); await p.waitForTimeout(600); }
   const snap = async n => { await p.waitForTimeout(400); await p.screenshot({ path: `${O}raw/${lang}_${n}.png` }); };
   await p.click('[data-tab=today]'); await p.waitForSelector('#next'); await snap(1);
   await p.click('[data-tab=calendar]'); await p.waitForSelector('.day'); await snap(2);
