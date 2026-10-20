@@ -1,5 +1,6 @@
 name: iOS build → TestFlight
 on: { workflow_dispatch: { inputs: { upload: { description: 'Upload to TestFlight', type: boolean, default: true } } } }
+env: { APP_PROFILE: "Cycle Clear App Store v3 mvg8gl3f", WIDGET_PROFILE: "Cycle Clear Widget App Store mvg8glfa" }
 jobs:
   ios:
     runs-on: macos-15
@@ -12,7 +13,7 @@ jobs:
       - name: Wire local plugins + widget extension
         run: gem install xcodeproj --user-install --no-document >/dev/null && ruby -e 'Gem.paths' && ruby ios/App/scripts/add_native.rb
       - name: Install signing + API key (from encrypted secrets; nothing echoed)
-        env: { P12: "${{ secrets.IOS_P12_B64 }}", P12_PASS: "${{ secrets.IOS_P12_PASS }}", KEY: "${{ secrets.ASC_KEY_P8_B64 }}", KID: "${{ secrets.ASC_KEY_ID }}" }
+        env: { P12: "${{ secrets.IOS_P12_B64 }}", P12_PASS: "${{ secrets.IOS_P12_PASS }}", KEY: "${{ secrets.ASC_KEY_P8_B64 }}", PROFILE: "${{ secrets.IOS_PROFILE_B64 }}", WPROFILE: "${{ secrets.IOS_WIDGET_PROFILE_B64 }}" }
         run: |
           set +x
           KC=$RUNNER_TEMP/build.keychain-db; KP=$(uuidgen)
@@ -23,22 +24,22 @@ jobs:
           security list-keychain -d user -s $KC login.keychain-db
           rm $RUNNER_TEMP/dist.p12
           echo "$KEY" | base64 --decode > $RUNNER_TEMP/AuthKey.p8
-      - name: Archive (automatic signing via App Store Connect API key)
+          PD=~/Library/MobileDevice/Provisioning\ Profiles; mkdir -p "$PD"
+          echo "$PROFILE" | base64 --decode > "$PD/cycleclear.mobileprovision"; echo "$WPROFILE" | base64 --decode > "$PD/cycleclear-widget.mobileprovision"
+      - name: Archive (manual signing)
         env: { KID: "${{ secrets.ASC_KEY_ID }}", ISS: "${{ secrets.ASC_ISSUER_ID }}" }
         run: |
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
-            -archivePath $RUNNER_TEMP/App.xcarchive -allowProvisioningUpdates \
-            -authenticationKeyPath $RUNNER_TEMP/AuthKey.p8 -authenticationKeyID "$KID" -authenticationKeyIssuerID "$ISS" \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} archive 2>&1 | grep -E "error:|warning: .*(sign|profile|entitle)|ARCHIVE" ; test -d $RUNNER_TEMP/App.xcarchive
       - name: Export IPA
         env: { KID: "${{ secrets.ASC_KEY_ID }}", ISS: "${{ secrets.ASC_ISSUER_ID }}" }
         run: |
           cat > $RUNNER_TEMP/export.plist <<PL
           <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>3S2B5CZC84</string><key>signingStyle</key><string>automatic</string><key>uploadSymbols</key><true/></dict></plist>
+          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>3S2B5CZC84</string><key>signingStyle</key><string>manual</string><key>provisioningProfiles</key><dict><key>com.baroodlabs.cycleclear</key><string>$APP_PROFILE</string><key>com.baroodlabs.cycleclear.widget</key><string>$WIDGET_PROFILE</string></dict><key>uploadSymbols</key><true/></dict></plist>
           PL
-          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist -exportPath $RUNNER_TEMP/out -allowProvisioningUpdates \
-            -authenticationKeyPath $RUNNER_TEMP/AuthKey.p8 -authenticationKeyID "$KID" -authenticationKeyIssuerID "$ISS" 2>&1 | grep -E "error|EXPORT" 
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist -exportPath $RUNNER_TEMP/out 2>&1 | grep -E "error|EXPORT" 
           ls -la $RUNNER_TEMP/out
           unzip -l $RUNNER_TEMP/out/*.ipa | grep -E "appex|\.app/App$" || true
       - name: Upload to TestFlight (no review, no release)

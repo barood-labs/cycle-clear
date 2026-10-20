@@ -6,7 +6,7 @@ struct Entry: TimelineEntry { let date: Date; let d: CCData }
 
 struct Provider: TimelineProvider {
     func load() -> CCData {
-        guard let s = UserDefaults(suiteName: "group.com.baroodlabs.cycleclear")?.string(forKey: "widget"), let data = s.data(using: .utf8),
+        guard let s = CCShared.read(), let data = s.data(using: .utf8),
               let d = try? JSONDecoder().decode(CCData.self, from: data) else { return CCData(big: "—", title: "", line: "", discreet: true, onPeriod: false) }
         return d
     }
