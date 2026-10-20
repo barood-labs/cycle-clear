@@ -1,4 +1,4 @@
-# Cycle Clear v2: features and why (see RESEARCH.md)
+# Virabloom v2: features and why (see RESEARCH.md)
 | Feature | Why (research) |
 |---|---|
 | 6 modes chosen at onboarding: period, birth control, irregular/PCOS, TTC, pregnancy, perimenopause | One-size 28-day apps fail PCOS/peri/BC users (top Reddit complaint) |

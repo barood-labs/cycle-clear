@@ -1,6 +1,6 @@
 # App Review notes (paste into App Store Connect → App Review Information → Notes)
 
-Cycle Clear is a private menstrual-cycle diary with estimated predictions.
+Virabloom is a private menstrual-cycle diary with estimated predictions.
 
 - **No data collection.** App Privacy questionnaire: "Data Not Collected". All entries (period dates, flow, symptoms, notes) are stored only on-device (WebView IndexedDB). The app has no account, no backend, no analytics, no ads, no third-party SDKs and makes no network requests for user data. Content-Security-Policy sets `connect-src 'none'`.
 - **Guideline 5.1.1 (Data collection and storage):** nothing is collected; no login is required; users can export their own data to a file and delete all data in Settings → Delete all data.

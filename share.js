@@ -14,7 +14,7 @@ export async function open(payload, pass) { const raw = ub64(payload.replace(/^c
 const icsDate = s => s.replace(/-/g, ''), stamp = () => new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
 const fold = s => s.replace(/[,;\\]/g, m => '\\' + m);
 // events: [{uid, start:'YYYY-MM-DD', endExcl:'YYYY-MM-DD', title}]
-export function ics(events, cancel = false) { const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cycle Clear//EN', 'CALSCALE:GREGORIAN', `METHOD:${cancel ? 'CANCEL' : 'PUBLISH'}`];
+export function ics(events, cancel = false) { const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Virabloom//EN', 'CALSCALE:GREGORIAN', `METHOD:${cancel ? 'CANCEL' : 'PUBLISH'}`];
   for (const e of events) L.push('BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${stamp()}`, `DTSTART;VALUE=DATE:${icsDate(e.start)}`, `DTEND;VALUE=DATE:${icsDate(e.endExcl)}`, `SUMMARY:${fold(e.title)}`,
     `SEQUENCE:${cancel ? 1 : 0}`, `STATUS:${cancel ? 'CANCELLED' : 'CONFIRMED'}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
   L.push('END:VCALENDAR'); return L.join('\r\n') + '\r\n'; }

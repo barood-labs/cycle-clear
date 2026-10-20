@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Cycle Clear</string>
+        <string>Virabloom</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,7 +48,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Unlock Cycle Clear with Face ID.</string>
+	<string>Unlock Virabloom with Face ID.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleLocalizations</key>
@@ -56,8 +56,8 @@
 	<key>CFBundleAllowMixedLocalizations</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>If you turn on Apple Health sync, Cycle Clear reads your menstrual flow entries to show them in your calendar. Data stays on your iPhone.</string>
+	<string>If you turn on Apple Health sync, Virabloom reads your menstrual flow entries to show them in your calendar. Data stays on your iPhone.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>If you turn on Apple Health sync, Cycle Clear saves the period days you log to Apple Health. Data stays on your iPhone.</string>
+	<string>If you turn on Apple Health sync, Virabloom saves the period days you log to Apple Health. Data stays on your iPhone.</string>
 </dict>
 </plist>

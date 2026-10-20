@@ -1,4 +1,4 @@
-{"appId":"com.baroodlabs.cycleclear","appName":"Cycle Clear","webDir":"www",
+{"appId":"com.baroodlabs.cycleclear","appName":"Virabloom","webDir":"www",
  "ios":{"contentInset":"never","limitsNavigationsToAppBoundDomains":false},
  "android":{"allowMixedContent":false},
  "plugins":{"LocalNotifications":{"smallIcon":"ic_stat_icon","iconColor":"#D6336C"}}}

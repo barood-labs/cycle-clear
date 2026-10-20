@@ -46,7 +46,7 @@ struct CycleWidgetView: View {
 struct CycleWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "CycleWidget", provider: Provider()) { CycleWidgetView(entry: $0) }
-            .configurationDisplayName("Cycle Clear")
+            .configurationDisplayName("Virabloom")
             .description("Cycle day at a glance. Private: data never leaves your phone.")
             .supportedFamilies([.systemSmall])
     }

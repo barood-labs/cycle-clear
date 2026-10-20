@@ -1,4 +1,4 @@
-# Cycle Clear: user research (2026-10-19)
+# Virabloom: user research (2026-10-19)
 Sources: Reddit r/women "What do you actually wish your period tracking app did?" (Jun 2026), r/TheGirlSurvivalGuide "Best period tracker app in 2025" (+2026 replies), Kymara Health's 2026 Reddit round-up, Tilburg thesis on PCOS needs (arno.uvt.nl/show.cgi?fid=183009), UCL analysis of 5,257 Play reviews across 78 FemHealth apps (Warner et al.), Kent GDPR audit of Flo/Clue/Eve, CHI 2026 anonymity study, FTC v. Flo (2021), Frasco v. Flo jury verdict against Meta (Aug 2025), Google/Flo $56M settlement (Reuters, Sep 2025), Fertility Friend App Store page.
 
 ## Top complaints about Flo / Clue / Stardust & co.
@@ -22,7 +22,7 @@ Sources: Reddit r/women "What do you actually wish your period tracking app did?
 11. Apple Health sync, partner sharing, home-screen widget
 
 ## What we build (fits local-only privacy)
-| Need | Cycle Clear answer |
+| Need | Virabloom answer |
 |---|---|
 | Privacy | 100% on-device, no account, no SDKs, no network; App Privacy "Data Not Collected" |
 | No paywall | Every feature free; the $2.99 one-time supporter unlock only adds themes |

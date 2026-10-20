@@ -41,7 +41,7 @@ for (const lang of ['en', 'ar', 'ur']) for (const vp of ['mobile', 'desktop']) {
     await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'preg'); await p.waitForSelector('#lmp'); await p.fill('#lmp', day(-70)); await p.dispatchEvent('#lmp', 'change'); await p.waitForTimeout(300);
     await p.click('[data-tab=today]'); await p.waitForSelector('#big'); ok(tag + ' preg week 11', (await p.textContent('#big')).includes('11')); await shot('3d_today_preg');
     await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'track'); await p.waitForTimeout(300);
-    await p.click('#discreet'); await p.waitForTimeout(300); ok(tag + ' discreet name', !(await p.textContent('header h1')).includes('Cycle')); await p.click('#discreet'); await p.waitForTimeout(300);
+    await p.click('#discreet'); await p.waitForTimeout(300); ok(tag + ' discreet name', !(await p.textContent('header h1')).includes('Virabloom')); await p.click('#discreet'); await p.waitForTimeout(300);
     await p.click('[data-tab=settings]'); await p.waitForSelector('#exp');
     const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#exp')]); const f = `/tmp/cc_${tag}.json`; await dl.saveAs(f);
     ok(tag + ' export valid', JSON.parse(fs.readFileSync(f, 'utf8')).periods.length === 4);

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Cycle Clear</string>
-    <string name="title_activity_main">Cycle Clear</string>
+    <string name="app_name">Virabloom</string>
+    <string name="title_activity_main">Virabloom</string>
     <string name="package_name">com.baroodlabs.cycleclear</string>
     <string name="custom_url_scheme">com.baroodlabs.cycleclear</string>
     <string name="widget_desc">Cycle day at a glance. Private: data never leaves your phone.</string>
