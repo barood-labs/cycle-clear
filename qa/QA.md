@@ -1,4 +1,2 @@
-# QA 2026-10-19
-Script: qa/qa.mjs. Langs EN/AR/UR × mobile 390px / desktop 1280px. 158/158 checks pass locally and on live Pages.
-Screens: onboarding, today (empty + data), calendar, day sheet, insights, settings (bad code), supporter dark theme, PIN lock. Each checked for no horizontal overflow and no JS errors. Also: RTL dir, import/export round-trip, note HTML escaping, wrong/right PIN, manual language switch, delete-all, auto-detect ar-SA, fallback en for ja-JP.
-Shots: qa/shots (local), qa/shots_live (live).
+# QA 2026-10-19 (v2)
+qa/qa.mjs: EN/AR/UR x mobile 390 + desktop 1280. 230/230 local and live. Covers onboarding+goal, today (track/pcos/bc+pill/preg), calendar, day sheet (+TTC), insights+patterns, report, settings, supporter theme, PIN lock, discreet, import/export, delete, autodetect. Shots: qa/shots, contact sheets: qa/sheets. Store: store/6.7in_*, store/6.5in_* (EN, AR).
