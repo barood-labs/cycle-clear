@@ -12,7 +12,9 @@ let S = { periods: [], days: {}, settings: { ...DEF } }, unlocked = false, lang 
 const detect = () => { const q = new URLSearchParams(location.search).get('lang'); if (q && LANGS[q]) return q;
   if (S.settings.lang && LANGS[S.settings.lang]) return S.settings.lang;
   for (const l of navigator.languages || [navigator.language]) { const p = (l || '').slice(0, 2).toLowerCase(); if (LANGS[p]) return p; } return 'en'; };
-const t = (k, n) => (T[lang][k] ?? T.en[k]).replace('{n}', n);
+// Arabic number agreement: 3–10 أيام, else يومًا (1 and 2 rarely shown).
+const arDays = n => n >= 3 && n <= 10 ? 'أيام' : 'يومًا';
+const t = (k, n) => { let s = T[lang][k] ?? T.en[k]; if (lang === 'ar' && n !== undefined) s = s.replace('يوم', arDays(n)); return s.replace('{n}', n); };
 const loc = () => lang + '-u-nu-latn';
 const fmt = (n, o = { day: 'numeric', month: 'short' }) => new Intl.DateTimeFormat(loc(), { timeZone: 'UTC', ...o }).format(new Date(n * 864e5));
 const save = async () => { await db.set('state', S); };
@@ -55,7 +57,7 @@ function calendar() { const td = todayStr(); if (!calMonth) calMonth = td.slice(
   const [y, m] = calMonth.split('-').map(Number), first = Date.UTC(y, m - 1, 1) / 864e5, dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const wkStart = (new Intl.Locale(lang).weekInfo?.firstDay ?? (['ar', 'ur'].includes(lang) ? 6 : 1)) % 7;
   const lead = (new Date(first * 864e5).getUTCDay() - wkStart + 7) % 7, pr = predict(S.periods, S.settings, td, 12);
-  const wd = [...Array(7)].map((_, i) => fmt(3 + wkStart + i, { weekday: 'narrow' })); // day 3 = Sun 1970-01-04
+  const wd = [...Array(7)].map((_, i) => fmt(3 + wkStart + i, { weekday: ['ar', 'ur'].includes(lang) ? 'short' : 'narrow' })); // day 3 = Sun 1970-01-04
   let cells = '<div></div>'.repeat(lead);
   for (let d = 1; d <= dim; d++) { const s = ds(first + d - 1), k = dayKind(s, S.periods, pr), has = S.days[s] ? ' has' : '';
     cells += `<button class="day ${k}${s === td ? ' now' : ''}${has}" data-d="${s}" aria-label="${fmt(first + d - 1, { dateStyle: 'full' })} ${k ? t('legend' + { period: 'Period', predicted: 'Predicted', fertile: 'Fertile', ovulation: 'Ovulation' }[k]) : ''}">${d}</button>`; }
