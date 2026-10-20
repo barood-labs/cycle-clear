@@ -28,3 +28,11 @@ export function dayKind(d, periods, pr) {
   for (const f of pr.future) { if (n >= f.start && n <= f.end) return 'predicted'; if (n === f.ov) return 'ovulation'; if (n >= f.fs && n <= f.fe) return 'fertile'; }
   return '';
 }
+// Range for irregular cycles: next start between last+min and last+max of recent cycles.
+export function range(pr) { if (pr.none) return null; const c = pr.cycles.slice(-6); if (c.length < 2) return { a: pr.next - 3, b: pr.next + 3 };
+  const L = dn(pr.last.start); return { a: L + Math.min(...c), b: L + Math.max(...c) }; }
+// Cycle phase of a past day, using the period that precedes it and the following start (or average).
+export function phaseOf(d, periods, pr) { const n = dn(d), p = [...periods].sort((a, b) => dn(a.start) - dn(b.start)); let i = -1;
+  for (let k = 0; k < p.length; k++) if (dn(p[k].start) <= n) i = k; if (i < 0) return null;
+  const s = dn(p[i].start), e = p[i].end ? dn(p[i].end) : s + pr.periodLen - 1, nx = p[i + 1] ? dn(p[i + 1].start) : s + pr.cycleLen;
+  if (n <= e) return 'men'; const ov = nx - 14; if (n >= nx) return null; if (n >= ov - 2 && n <= ov + 1) return 'ov'; return n < ov ? 'fol' : 'lut'; }
