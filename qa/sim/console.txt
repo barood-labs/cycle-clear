@@ -1,0 +1,3 @@
+2026-10-20 06:42:18.891 App[11241:38588] DiskCookieStorage changing policy from 2 to 0, cookie file: file:///Users/runner/Library/Developer/CoreSimulator/Devices/600A45A3-B3A0-4A39-8A9C-5D051F9FDA9C/data/Containers/Data/Application/44F6EDD3-67E7-4A9E-9610-E95D1A9AE092/Library/Cookies/com.baroodlabs.cycleclear.binarycookies
+⚡️  Loading app at capacitor://localhost...
+⚡️  WebView loaded

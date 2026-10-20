@@ -4,7 +4,7 @@ Content rating & Play Data safety: **No data collected, no data shared.**
 
 ## EN
 **Name:** Virabloom: Period Tracker
-**Subtitle (30):** No account. Data stays on phone
+**Subtitle (30):** Private. Data stays on phone
 **Short (80):** Private period & cycle tracker. No account, no ads, no data leaves your phone.
 **Description:**
 Virabloom is a period tracker that keeps your data where it belongs: on your phone.
