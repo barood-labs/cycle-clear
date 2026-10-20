@@ -1,6 +1,6 @@
 import { chromium } from 'playwright-core'; import fs from 'fs';
 const U = process.env.BASE_URL || 'http://localhost:8765/', O = 'qa/shots/'; fs.mkdirSync(O, { recursive: true });
-const CODE = fs.readFileSync('private/supporter_code.txt', 'utf8').trim();
+const CODE = fs.readFileSync('private/pro_codes.txt', 'utf8').split('\n').find(l => l.startsWith('PCOS-')).trim();
 // sample: 4 past periods, ~29-day cycles, relative to today
 const day = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const sample = { app: 'cycleclear', v: 1, periods: [-100, -71, -42, -12].map(s => ({ start: day(s), end: day(s + 4) })), days: { [day(-12)]: { flow: 'heavy', sym: ['cramps'], note: 'test <b>x</b>' } }, settings: {} };
@@ -20,6 +20,11 @@ for (const lang of ['en', 'ar', 'ur']) for (const vp of ['mobile', 'desktop']) {
     await p.click('#mark'); await p.waitForSelector('#big'); ok(tag + ' start today -> period day 1', (await p.textContent('#big')).includes('1'));
     await p.click('[data-tab=settings]'); await p.waitForSelector('#imp', { state: 'attached' }); await p.setInputFiles('#imp', '/tmp/cc_sample.json'); await p.waitForTimeout(400);
     await p.click('[data-tab=today]'); await p.waitForSelector('#next'); await shot('3_today');
+    await p.click('[data-tab=insights]'); await p.waitForSelector('.teaser'); ok(tag + ' free: patterns teaser', true); ok(tag + ' free: report locked', (await p.getAttribute('#rep', 'href')) === '#/pro'); await shot('6a_insights_free');
+    await p.click('#rep'); await p.waitForSelector('#pcosreq'); ok(tag + ' pcos mailto', (await p.getAttribute('#pcosreq', 'href')).startsWith('mailto:'));
+    await p.fill('#code', 'WRONG'); await p.click('#redeem'); await p.waitForSelector('#cmsg.err'); await shot('16_pro_paywall');
+    await p.fill('#code', CODE.toLowerCase()); await p.click('#redeem'); await p.waitForSelector('#proowned'); ok(tag + ' pcos code unlocks pro', true); await shot('17_pro_owned');
+    await p.click('[data-tab=today]'); await p.waitForSelector('#next');
     const big = await p.textContent('#big'); ok(tag + ' today shows cycle day 13', big.includes('13'));
     await p.click('[data-tab=calendar]'); await p.waitForSelector('.day'); ok(tag + ' calendar marks', (await p.$$('.day.period')).length >= 1 && (await p.$$('.day.fertile,.day.ovulation,.day.predicted')).length >= 1);
     await shot('4_calendar'); await p.click(`.day[data-d="${day(-12)}"]`).catch(async () => { await p.click('#prev'); await p.click(`.day[data-d="${day(-12)}"]`); });
@@ -40,8 +45,7 @@ for (const lang of ['en', 'ar', 'ur']) for (const vp of ['mobile', 'desktop']) {
     await p.click('[data-tab=settings]'); await p.waitForSelector('#exp');
     const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#exp')]); const f = `/tmp/cc_${tag}.json`; await dl.saveAs(f);
     ok(tag + ' export valid', JSON.parse(fs.readFileSync(f, 'utf8')).periods.length === 4);
-    await p.fill('#code', 'WRONG'); await p.click('#redeem'); await p.waitForSelector('#cmsg.err'); await shot('7_settings');
-    await p.fill('#code', CODE.toLowerCase()); await p.click('#redeem'); await p.waitForSelector('#theme'); await p.selectOption('#theme', 'dark'); await p.waitForFunction(() => document.body.dataset.theme === 'dark', null, { timeout: 3000 }).catch(() => {});
+    await shot('7_settings'); await p.waitForSelector('#theme'); await p.selectOption('#theme', 'dark'); await p.waitForFunction(() => document.body.dataset.theme === 'dark', null, { timeout: 3000 }).catch(() => {});
     ok(tag + ' supporter theme', (await p.getAttribute('body', 'data-theme')) === 'dark'); await shot('8_supporter_dark'); await p.selectOption('#theme', 'rose');
     await p.fill('#np', '1234'); await p.click('#setpin'); await p.waitForSelector('#rmpin'); await p.reload(); await p.waitForSelector('#pin'); await shot('9_lock');
     await p.fill('#pin', '0000'); await p.click('#unl'); ok(tag + ' wrong pin', (await p.textContent('#perr')).length > 0);

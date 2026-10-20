@@ -12,7 +12,9 @@ for (const lang of ['en', 'ar', 'ur']) {
     await p.goto(`${U}?lang=${lang}`); await p.click('#accept'); await p.click('.mode[data-m=track]'); await p.click('#go'); await p.waitForSelector('#mark');
     await p.click('[data-tab=settings]'); await p.setInputFiles('#imp', '/tmp/cc_share.json'); await p.waitForTimeout(400);
     ok(tag + ' health card web note', (await p.textContent('#healthcard')).length > 20); await p.locator('#healthcard').scrollIntoViewIfNeeded(); await p.screenshot({ path: `${O}${tag}_10_settings_health.png` });
-    await p.goto(`${U}?lang=${lang}#/share`); await p.waitForSelector('#b_code'); ok(tag + ' not sharing', !!(await p.$('#notsharing'))); await shot(p, '11_share');
+    const PC = fs.readFileSync('private/pro_codes.txt', 'utf8').split('\n').filter(l => l.startsWith('PCOS-'))[1].trim();
+    await p.goto(`${U}?lang=${lang}#/share`); await p.waitForSelector('#code'); ok(tag + ' share locked for free', true); await p.fill('#code', PC); await p.click('#redeem'); await p.waitForSelector('#proowned');
+    await p.evaluate(() => { location.hash = '#/settings'; }); await p.evaluate(() => { location.hash = '#/share'; }); await p.waitForSelector('#b_code'); ok(tag + ' not sharing', !!(await p.$('#notsharing'))); await shot(p, '11_share');
     await p.click('label:has(#f_phase) .sw'); await p.click('#b_code'); await p.waitForSelector('#pass'); const code = await p.textContent('#pass'), url = await p.inputValue('#shareurl');
     ok(tag + ' phase toggle kept', await p.isChecked('#f_phase')); ok(tag + ' link has payload in fragment only', url.includes('#/p/c1.') && !url.split('#')[0].includes('c1.')); await shot(p, '12_share_code');
     const [d] = await Promise.all([p.waitForEvent('download'), p.click('#b_ics')]); const f = `/tmp/cc_${tag}.ics`; await d.saveAs(f); const ics = fs.readFileSync(f, 'utf8');

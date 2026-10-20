@@ -3,7 +3,7 @@ const C = window.Capacitor; export const isNative = !!(C && C.isNativePlatform &
 export const platform = isNative ? C.getPlatform() : 'web';
 const P = n => (isNative ? C.registerPlugin(n) : null);
 const LN = P('LocalNotifications'), BIO = P('NativeBiometric'), IAP = P('NativePurchases'), FS = P('Filesystem'), SH = P('Share');
-export const PRODUCT_ID = 'com.baroodlabs.cycleclear.supporter';
+import { PRO_PRODUCT_ID as PRODUCT_ID } from './config.js';
 export async function scheduleReminders(list) { if (!LN) return false; // list: [{id,title,body,at?:Date,daily?:{hour,minute}}]
   try { const perm = await LN.requestPermissions(); if (perm.display !== 'granted') return false;
     const pend = await LN.getPending(); if (pend.notifications.length) await LN.cancel({ notifications: pend.notifications.map(n => ({ id: n.id })) });
