@@ -22,3 +22,6 @@
 | iOS widget | WidgetKit extension (systemSmall) via App Group `group.com.baroodlabs.cycleclear`; discreet variant |
 | Android widget | AppWidgetProvider; discreet variant |
 | Android Health Connect | Not done: needs a Health Connect plugin + Play Health Connect declaration; deferred |
+
+## v4 pricing
+Free forever: logging, predictions, all modes, pill tracker, reminders, PIN/Face ID, export/backup, Apple Health. Pro ($9.99 one-time, IAP `com.baroodlabs.cycleclear.pro`, Restore): partner sharing, widgets, doctor report, detailed patterns, themes. Paywall = #/pro, opened only by the user (Settings → About Pro, or tapping a 🔒 Pro feature). PCOS: mailto request with random request ID → web: we send a PCOS code (hashes in config.js, plain codes in private/pro_codes.txt on the box, 60 codes); iOS/Android: we send a store promo/offer code. Rename the app: edit brand.json → `npm run brand`.
