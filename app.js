@@ -55,7 +55,7 @@ function calendar() { const td = todayStr(); if (!calMonth) calMonth = td.slice(
   const [y, m] = calMonth.split('-').map(Number), first = Date.UTC(y, m - 1, 1) / 864e5, dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const wkStart = (new Intl.Locale(lang).weekInfo?.firstDay ?? (['ar', 'ur'].includes(lang) ? 6 : 1)) % 7;
   const lead = (new Date(first * 864e5).getUTCDay() - wkStart + 7) % 7, pr = predict(S.periods, S.settings, td, 12);
-  const wd = [...Array(7)].map((_, i) => fmt(4 + wkStart + i - 4 + 3, { weekday: 'narrow' })); // 1970-01-04 is Sunday (day 3)
+  const wd = [...Array(7)].map((_, i) => fmt(3 + wkStart + i, { weekday: 'narrow' })); // day 3 = Sun 1970-01-04
   let cells = '<div></div>'.repeat(lead);
   for (let d = 1; d <= dim; d++) { const s = ds(first + d - 1), k = dayKind(s, S.periods, pr), has = S.days[s] ? ' has' : '';
     cells += `<button class="day ${k}${s === td ? ' now' : ''}${has}" data-d="${s}" aria-label="${fmt(first + d - 1, { dateStyle: 'full' })} ${k ? t('legend' + { period: 'Period', predicted: 'Predicted', fertile: 'Fertile', ovulation: 'Ovulation' }[k]) : ''}">${d}</button>`; }
