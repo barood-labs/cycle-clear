@@ -12,9 +12,9 @@ for (const lang of ['en', 'ar', 'ur']) {
     await p.goto(`${U}?lang=${lang}`); await p.click('#accept'); await p.click('.mode[data-m=track]'); await p.click('#go'); await p.waitForSelector('#mark');
     await p.click('[data-tab=settings]'); await p.setInputFiles('#imp', '/tmp/cc_share.json'); await p.waitForTimeout(400);
     ok(tag + ' health card web note', (await p.textContent('#healthcard')).length > 20); await p.locator('#healthcard').scrollIntoViewIfNeeded(); await p.screenshot({ path: `${O}${tag}_10_settings_health.png` });
-    await p.goto(`${U}#/share`); await p.waitForSelector('#b_code'); ok(tag + ' not sharing', !!(await p.$('#notsharing'))); await shot(p, '11_share');
+    await p.goto(`${U}?lang=${lang}#/share`); await p.waitForSelector('#b_code'); ok(tag + ' not sharing', !!(await p.$('#notsharing'))); await shot(p, '11_share');
     await p.click('label:has(#f_phase) .sw'); await p.click('#b_code'); await p.waitForSelector('#pass'); const code = await p.textContent('#pass'), url = await p.inputValue('#shareurl');
-    ok(tag + ' link has payload in fragment only', url.includes('#/p/c1.') && !url.split('#')[0].includes('c1.')); await shot(p, '12_share_code');
+    ok(tag + ' phase toggle kept', await p.isChecked('#f_phase')); ok(tag + ' link has payload in fragment only', url.includes('#/p/c1.') && !url.split('#')[0].includes('c1.')); await shot(p, '12_share_code');
     const [d] = await Promise.all([p.waitForEvent('download'), p.click('#b_ics')]); const f = `/tmp/cc_${tag}.ics`; await d.saveAs(f); const ics = fs.readFileSync(f, 'utf8');
     ok(tag + ' ics 3 events', (ics.match(/BEGIN:VEVENT/g) || []).length === 3 && ics.includes('METHOD:PUBLISH')); await p.waitForSelector('#b_stop'); await shot(p, '13_share_active');
     const [d2] = await Promise.all([p.waitForEvent('download'), p.click('#b_stop')]); const f2 = `/tmp/cc_${tag}_stop.ics`; await d2.saveAs(f2); const c2 = fs.readFileSync(f2, 'utf8');

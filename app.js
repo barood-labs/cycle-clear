@@ -244,9 +244,9 @@ function icsEvents(o, id) { const ev = []; const title = k => S.settings.discree
 async function sendFile(name, text, type) { if (N.isNative) return N.shareHtml(name, text); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); }
 const shareBase = () => N.isNative ? 'https://barood-labs.github.io/cycle-clear/' : location.origin + location.pathname;
 
-function share() { const st = S.settings, cur = st.share, hideF = ['bc', 'peri', 'preg'].includes(M());
+function share(F = { next: true, fertile: false, phase: false }) { const st = S.settings, cur = st.share, hideF = ['bc', 'peri', 'preg'].includes(M());
   shell('insights', `<div class="card clay"><h2>💞 ${t('share')}</h2><p>${t('shareIntro')}</p>
-   ${tog('f_next', true, t('sh_next'))}${hideF ? '' : tog('f_fertile', false, t('sh_fertile'))}${tog('f_phase', false, t('sh_phase'))}
+   ${tog('f_next', F.next, t('sh_next'))}${hideF ? '' : tog('f_fertile', F.fertile, t('sh_fertile'))}${tog('f_phase', F.phase, t('sh_phase'))}
    <div class="actions"><button class="btn" id="b_ics">📅 ${t('sh_ics')}</button><button class="btn" id="b_text">💬 ${t('sh_text')}</button><button class="btn primary" id="b_code">🔐 ${t('sh_code')}</button></div>
    <div id="codeout"></div></div>
    <div class="card clay" id="status"><h3>${t('sh_stop')}</h3>${cur ? `<p>${t('sh_active', fmt(dn(cur.at), { dateStyle: 'medium' }))} · ${cur.kinds.map(k => t('sh_' + k)).join(', ')}</p><p class="muted">${t('sh_stopNote', fmt(dn(cur.exp), { dateStyle: 'medium' }))}</p><button class="btn danger" id="b_stop">⛔ ${t('sh_stop')}</button>` : `<p class="muted" id="notsharing">${t('sh_none')}</p>`}</div>
@@ -255,11 +255,11 @@ function share() { const st = S.settings, cur = st.share, hideF = ['bc', 'peri',
   const record = async (kind, o, id) => { const c = st.share || { id: id || crypto.randomUUID().slice(0, 8), kinds: [], uids: [] }; c.at = o.at; c.exp = o.exp; if (!c.kinds.includes(kind)) c.kinds.push(kind);
     if (kind === 'ics') c.uids = [...new Set([...c.uids, ...icsEvents(o, c.id).map(e => e.uid)])]; st.share = c; await db.set('state', S); return c; };
   const pick = () => { const f = fields(); if (!f.next && !f.fertile && !f.phase) { toast(t('sh_pick')); return null; } return shareSnapshot(f); };
-  $('#b_ics').onclick = async () => { const o = pick(); if (!o) return; const c = await record('ics', o, st.share?.id); await sendFile('cycle-clear-shared.ics', SH.ics(icsEvents(o, c.id)), 'text/calendar'); share(); };
+  $('#b_ics').onclick = async () => { const o = pick(); if (!o) return; const c = await record('ics', o, st.share?.id); await sendFile('cycle-clear-shared.ics', SH.ics(icsEvents(o, c.id)), 'text/calendar'); share(fields()); };
   $('#b_text').onclick = async () => { const o = pick(); if (!o) return; const txt = snapshotText(o); await record('text', o);
-    if (navigator.share) { try { await navigator.share({ text: txt }); } catch { } } else { await navigator.clipboard?.writeText(txt).catch(() => { }); toast(t('sh_copied')); } share(); };
+    if (navigator.share) { try { await navigator.share({ text: txt }); } catch { } } else { await navigator.clipboard?.writeText(txt).catch(() => { }); toast(t('sh_copied')); } share(fields()); };
   $('#b_code').onclick = async () => { const o = pick(); if (!o) return; const pass = SH.newPass(), url = shareBase() + '#/p/' + await SH.seal(o, pass); await record('code', o);
-    const qr = await QR.toDataURL(url, { margin: 1, width: 360, color: { dark: '#3a1b2b', light: '#ffffff' } }); share();
+    const qr = await QR.toDataURL(url, { margin: 1, width: 360, color: { dark: '#3a1b2b', light: '#ffffff' } }); share(fields());
     $('#codeout').innerHTML = `<div class="card clay codebox"><img src="${qr}" alt="QR" class="qr"><p class="muted">${t('sh_codeNote')}</p><p>${t('sh_pass')}: <b class="pass" id="pass">${pass}</b></p>
       <input id="shareurl" readonly value="${esc(url)}" aria-label="link"><button class="btn" id="b_copy">${t('sh_copy')}</button></div>`;
     $('#b_copy').onclick = async () => { await navigator.clipboard?.writeText(url).catch(() => { }); toast(t('sh_copied')); }; };
