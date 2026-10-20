@@ -13,3 +13,6 @@ EN is the source. All other strings were drafted by the studio (no native speake
 | FR | LTR | Light review | — |
 | PT | LTR | Light review | Brazilian Portuguese. |
 | DE | LTR | Light review | Uses "du". |
+
+## v3 strings (i18n3.js: sharing, Apple Health, widget)
+All 9 non-EN languages are drafts → native review needed. Apple Health names: ES/PT use the localized app names Apple Salud / Apple Saúde, FR Apple Santé, TR Apple Sağlık — verify against Apple’s official localized names. Widget/Health usage strings in Info.plist are English only (add InfoPlist.strings per language before launch).

@@ -13,3 +13,12 @@
 | Discreet mode (neutral name + neutral reminders), PIN + Face ID | Post-Roe privacy, "phone checked by others" |
 | Everything free; $2.99 one-time supporter = themes only | Paywall complaints; one-time purchase asked for |
 | Planned: home-screen widget (WidgetKit/Glance), alternate discreet app icon (iOS setAlternateIconName) | Needs native extension work, v2.1 |
+
+## v3
+| Feature | Notes |
+|---|---|
+| Apple Health sync (opt-in) | Menstrual flow read/write on device; local Capacitor plugin `CCHealth` |
+| Partner sharing | Encrypted link+QR (AES-GCM/PBKDF2 200k, data in URL fragment, separate passcode, 35-day expiry), .ics, text; Stop sharing = cancelling .ics |
+| iOS widget | WidgetKit extension (systemSmall) via App Group `group.com.baroodlabs.cycleclear`; discreet variant |
+| Android widget | AppWidgetProvider; discreet variant |
+| Android Health Connect | Not done: needs a Health Connect plugin + Play Health Connect declaration; deferred |
