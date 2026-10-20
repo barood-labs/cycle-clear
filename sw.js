@@ -1,4 +1,4 @@
-const C='virabloom-v5',F=['./','i18n4.js','share.js','i18n3.js','vendor/qrcode.js','index.html','style.css','app.js','i18n.js','i18n2.js','native.js','icons/onboarding.png','icons/empty.png','db.js','cycle.js','config.js','manifest.webmanifest','privacy.html','icons/icon-192.png','icons/icon-512.png'];
+const C='virabloom-v6',F=['./','vendor/capacitor.js','i18n4.js','share.js','i18n3.js','vendor/qrcode.js','index.html','style.css','app.js','i18n.js','i18n2.js','native.js','icons/onboarding.png','icons/empty.png','db.js','cycle.js','config.js','manifest.webmanifest','privacy.html','icons/icon-192.png','icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(C).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request,{ignoreSearch:true})))});

@@ -1,7 +1,8 @@
 // Thin wrappers over Capacitor native plugins. On the web every call is a safe no-op.
 const C = window.Capacitor; export const isNative = !!(C && C.isNativePlatform && C.isNativePlatform());
 export const platform = isNative ? C.getPlatform() : 'web';
-const P = n => (isNative ? C.registerPlugin(n) : null);
+// registerPlugin comes from @capacitor/core JS (vendor/capacitor.js); never let a missing plugin blank the app.
+const P = n => { if (!isNative) return null; try { const r = C.registerPlugin || window.capacitorExports?.registerPlugin; return r ? r(n) : null; } catch (e) { console.warn(e); return null; } };
 const LN = P('LocalNotifications'), BIO = P('NativeBiometric'), IAP = P('NativePurchases'), FS = P('Filesystem'), SH = P('Share');
 import { PRO_PRODUCT_ID as PRODUCT_ID } from './config.js';
 export async function scheduleReminders(list) { if (!LN) return false; // list: [{id,title,body,at?:Date,daily?:{hour,minute}}]
