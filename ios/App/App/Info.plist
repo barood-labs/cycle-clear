@@ -55,5 +55,9 @@
 	<array><string>en</string><string>ar</string><string>es</string><string>fr</string><string>pt</string><string>hi</string><string>id</string><string>tr</string><string>ur</string><string>de</string></array>
 	<key>CFBundleAllowMixedLocalizations</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>If you turn on Apple Health sync, Cycle Clear reads your menstrual flow entries to show them in your calendar. Data stays on your iPhone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>If you turn on Apple Health sync, Cycle Clear saves the period days you log to Apple Health. Data stays on your iPhone.</string>
 </dict>
 </plist>
