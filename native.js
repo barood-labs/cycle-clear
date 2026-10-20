@@ -15,3 +15,8 @@ export async function iapPrice() { if (!IAP) return null; try { const r = await 
 export async function iapBuy() { try { const r = await IAP.purchaseProduct({ productIdentifier: PRODUCT_ID, productType: 'inapp', quantity: 1 }); return !!(r && (r.transactionId || r.productIdentifier)); } catch (e) { console.warn(e); return false; } }
 export async function iapRestore() { try { await IAP.restorePurchases(); const r = await IAP.getPurchases?.({ productType: 'inapp' }); return !!r?.purchases?.some(p => p.productIdentifier === PRODUCT_ID); } catch { return false; } }
 export async function shareHtml(name, html) { const w = await FS.writeFile({ path: name, data: html, directory: 'CACHE', encoding: 'utf8' }); await SH.share({ title: name, url: w.uri }); }
+const HK = platform === 'ios' ? P('CCHealth') : null, WG = P('CCWidget');
+export async function healthAuth() { try { return (await HK.requestAuth()).granted; } catch { return false; } }
+export async function healthWrite(days) { try { await HK.writeFlow({ days }); return true; } catch (e) { console.warn(e); return false; } }
+export async function healthRead(sinceDayNumber) { try { return (await HK.readFlow({ since: new Date(sinceDayNumber * 864e5).toISOString().slice(0, 10) })).days || []; } catch { return []; } }
+export async function widgetSet(data) { try { await WG?.setData({ json: JSON.stringify(data) }); } catch { } }

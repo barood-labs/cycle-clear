@@ -1,5 +1,8 @@
 import { T, LANGS, RTL } from './i18n.js';
 import { T2 } from './i18n2.js';
+import { T3 } from './i18n3.js';
+import * as SH from './share.js';
+import QR from './vendor/qrcode.js';
 import * as db from './db.js';
 import { predict, dayKind, dn, ds, todayStr, range, phaseOf } from './cycle.js';
 import { SUPPORTER_URL, SUPPORTER_CODE_HASH } from './config.js';
@@ -9,7 +12,7 @@ const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAl
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const DEF = { lang: '', cycleLen: 28, periodLen: 5, accepted: false, mode: '', supporter: '', theme: 'rose', pinHash: '', pinSalt: '', lmp: '',
-  pill: { on: false, time: '21:00' }, rem: { period: true, pill: true, fertile: false, time: '09:00' }, discreet: false, bio: false };
+  pill: { on: false, time: '21:00' }, rem: { period: true, pill: true, fertile: false, time: '09:00' }, discreet: false, bio: false, health: false, healthPushed: {}, share: null };
 const MODES = ['track', 'bc', 'pcos', 'ttc', 'preg', 'peri'], MODE_ICON = { track: '🌸', bc: '💊', pcos: '🌀', ttc: '🌱', preg: '🤰', peri: '🌙' };
 const BASE_SYM = ['cramps', 'headache', 'bloating', 'breasts', 'backPain', 'acne', 'tired', 'cravings', 'nausea', 'insomnia', 'spotting'];
 const MOODS = ['happy', 'calm', 'energetic', 'sad', 'anxious', 'irritable'];
@@ -19,12 +22,12 @@ const detect = () => { const q = new URLSearchParams(location.search).get('lang'
   if (S.settings.lang && LANGS[S.settings.lang]) return S.settings.lang;
   for (const l of navigator.languages || [navigator.language]) { const p = (l || '').slice(0, 2).toLowerCase(); if (LANGS[p]) return p; } return 'en'; };
 const arDays = n => n >= 3 && n <= 10 ? 'أيام' : 'يومًا';
-const t = (k, n, x = {}) => { let s = T2[lang]?.[k] ?? T[lang]?.[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace(/(^|\s)يوم(?=\s|$)/u, (m0, a) => a + arDays(n));
+const t = (k, n, x = {}) => { let s = T3[lang]?.[k] ?? T2[lang]?.[k] ?? T[lang]?.[k] ?? T3.en[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace(/(^|\s)يوم(?=\s|$)/u, (m0, a) => a + arDays(n));
   s = s.replace('{n}', n); for (const [a, b] of Object.entries(x)) s = s.replace(`{${a}}`, b); return s; };
 const loc = () => lang + '-u-nu-latn';
 const fmt = (n, o = { day: 'numeric', month: 'short' }) => new Intl.DateTimeFormat(loc(), { timeZone: 'UTC', ...o }).format(new Date(n * 864e5));
 const M = () => S.settings.mode || 'track', name = () => S.settings.discreet ? t('discreetName') : t('appName');
-const save = async () => { await db.set('state', S); syncReminders(); };
+const save = async () => { await db.set('state', S); syncReminders(); syncWidget(); healthPush(); };
 const toast = m => { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); };
 const isSup = () => S.settings.supporter === SUPPORTER_CODE_HASH || S.settings.supporter === 'iap';
 const chips = (id, list, on, multi = true) => `<div class="chips" id="${id}" data-multi="${multi ? 1 : 0}">${list.map(v => `<button class="chip ${(multi ? on.includes(v) : on === v) ? 'on' : ''}" data-v="${v}">${t(v)}</button>`).join('')}</div>`;
@@ -147,7 +150,7 @@ function insights() { const pr = predict(S.periods, S.settings), rows = historyR
   shell('insights', `<div class="grid"><div class="card clay stat"><small>${t('avgCycle')}</small><b>${t('days', pr.cycleLen)}</b></div><div class="card clay stat"><small>${t('avgPeriod')}</small><b>${t('days', pr.periodLen)}</b></div>
    <div class="card clay stat"><small>${t('cycles')}</small><b>${pr.logged}</b></div></div>
    <h2>${t('patterns')}</h2>${patterns(pr)}
-   <a class="btn primary big" href="#/report" id="rep">📄 ${t('makeReport')}</a>
+   <a class="btn primary big" href="#/report" id="rep">📄 ${t('makeReport')}</a><a class="btn big" href="#/share" id="shr">💞 ${t('share')}</a>
    <h2>${t('history')}</h2>${rows ? `<ul class="hist">${rows}</ul>` : `<p class="muted">${t('noHistory')}</p>`}`); }
 
 function reportHtml() { const pr = predict(S.periods, S.settings), cnt = {}; let pills = 0;
@@ -182,6 +185,9 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
    <div class="card clay"><h3>${t('pin')}</h3><p class="muted">${t('pinNote')}</p>${st.pinHash ? `<button class="btn" id="rmpin">${t('removePin')}</button>${bioOk ? tog('bio', st.bio, t('faceid')) : ''}` :
     `<div class="actions"><input id="np" type="password" inputmode="numeric" maxlength="8" placeholder="${t('newPin')}" aria-label="${t('newPin')}"><button class="btn" id="setpin">${t('setPin')}</button></div>`}
     ${tog('discreet', st.discreet, t('discreet'))}<p class="muted">${t('discreetNote')}</p></div>
+   <div class="card clay" id="healthcard"><h3>❤️ ${t('health')}</h3><p class="muted">${t('healthNote')}</p>${N.platform === 'ios' ? `${tog('hk', st.health, t('healthOn'))}${st.health ? `<button class="btn" id="hkimp">${t('healthImport')}</button>` : ''}` : `<p class="muted"><i>${t('healthWeb')}</i></p>`}</div>
+   <div class="card clay"><h3>${t('share')}</h3><p class="muted">${t('shareIntro')}</p><a class="btn" href="#/share">💞 ${t('share')}</a></div>
+   <div class="card clay"><h3>${t('widget')}</h3><p class="muted">${t('widgetNote')}</p></div>
    <div class="card clay"><h3>${t('backup')}</h3><p class="muted">${t('privacy')}</p><div class="actions"><button class="btn" id="exp">${t('exportData')}</button>
     <label class="btn">${t('importData')}<input id="imp" type="file" accept="application/json,.json" hidden></label></div><button class="btn danger" id="del">${t('deleteAll')}</button></div>
    <div class="card clay" id="supcard"><h3>${t('supporter')} ${sup ? '★' : ''}</h3><p>${t('supporterText')}</p>${supBlock}</div>
@@ -196,6 +202,8 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
   for (const k of ['period', 'pill', 'fertile']) if ($('#r_' + k)) $('#r_' + k).onchange = async e => { st.rem[k] = e.target.checked; await sv(); };
   $('#remtime').onchange = async e => { st.rem.time = e.target.value || '09:00'; await sv(); };
   $('#discreet').onchange = async e => { st.discreet = e.target.checked; await sv(); applyLang(); settings(); };
+  if ($('#hk')) $('#hk').onchange = async e => { if (e.target.checked && !(await N.healthAuth())) { e.target.checked = false; return toast(t('healthDenied')); } st.health = e.target.checked; st.healthPushed = {}; await sv(); settings(); };
+  if ($('#hkimp')) $('#hkimp').onclick = async () => { const n = await healthImport(); toast(t('healthImported', n)); };
   if ($('#bio')) $('#bio').onchange = async e => { st.bio = e.target.checked; await sv(); };
   if ($('#setpin')) $('#setpin').onclick = async () => { const v = $('#np').value; if (!/^\d{4,8}$/.test(v)) return toast(t('newPin'));
     st.pinSalt = [...crypto.getRandomValues(new Uint8Array(8))].map(b => b.toString(16)).join(''); st.pinHash = await sha(st.pinSalt + v); unlocked = true; await sv(); settings(); };
@@ -213,9 +221,69 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
     $('#restore').onclick = async () => { if (await N.iapRestore()) { st.supporter = 'iap'; await save(); applyLang(); toast(t('codeOk')); settings(); } }; }
   if ($('#theme')) $('#theme').onchange = async e => { st.theme = e.target.value; await save(); applyLang(); }; }
 
-function route() { applyLang(); if (!S.settings.accepted) return onboarding(); if (S.settings.pinHash && !unlocked) return lock();
-  const r = (location.hash.match(/#\/(\w+)/) || [])[1]; ({ calendar, insights, settings, report }[r] || today)(); window.scrollTo(0, 0); }
+function route() { applyLang(); const pm = location.hash.match(/^#\/p\/(c1\.[\w-]+)/); if (pm) return partner(pm[1]); if (!S.settings.accepted) return onboarding(); if (S.settings.pinHash && !unlocked) return lock();
+  const r = (location.hash.match(/#\/(\w+)/) || [])[1]; ({ calendar, insights, settings, report, share }[r] || today)(); window.scrollTo(0, 0); }
 
 (async () => { try { const s = await db.get('state'); if (s) S = { ...S, ...s, settings: { ...structuredClone(DEF), ...s.settings, pill: { ...DEF.pill, ...s.settings?.pill }, rem: { ...DEF.rem, ...s.settings?.rem } } }; } catch (e) { console.warn(e); }
   addEventListener('hashchange', route); route(); syncReminders();
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !N.isNative) navigator.serviceWorker.register('sw.js'); })();
+
+// ---------- partner sharing (no server) ----------
+function shareSnapshot(f) { const pr = predict(S.periods, S.settings, todayStr(), 3), out = { v: 1, at: todayStr(), exp: ds(dn(todayStr()) + 35), lang };
+  if (pr.none) return out; if (f.next) out.next = pr.future.slice(0, 3).map(x => [ds(x.start), ds(x.end)]);
+  if (f.fertile && !['bc', 'peri', 'preg'].includes(M())) out.fertile = pr.future.slice(0, 3).map(x => [ds(x.fs), ds(x.fe)]);
+  if (f.phase) out.phase = phaseOf(todayStr(), S.periods, pr) || 'lut'; return out; }
+const range2 = ([a, b]) => `${fmt(dn(a))} – ${fmt(dn(b))}`;
+function snapshotHtml(o) { return `${o.phase ? `<p><b>${t('sh_phaseNow', t('ph_' + o.phase))}</b></p>` : ''}${o.next ? `<h4>${t('sh_next')}</h4><ul class="hist">${o.next.map(r => `<li>🌸 ${range2(r)}</li>`).join('')}</ul>` : ''}
+  ${o.fertile ? `<h4>${t('sh_fertile')}</h4><ul class="hist">${o.fertile.map(r => `<li>🌱 ${range2(r)}</li>`).join('')}</ul>` : ''}<p class="muted">${t('sh_expires', fmt(dn(o.exp), { dateStyle: 'medium' }))} · ${t('notMedical')}</p>`; }
+function snapshotText(o) { const L = [t('sh_from')]; if (o.phase) L.push(t('sh_phaseNow', t('ph_' + o.phase)));
+  if (o.next) L.push(t('sh_next') + ':', ...o.next.map(r => '• ' + range2(r))); if (o.fertile) L.push(t('sh_fertile') + ':', ...o.fertile.map(r => '• ' + range2(r))); return L.join('\n'); }
+function icsEvents(o, id) { const ev = []; const title = k => S.settings.discreet ? '●' : t(k);
+  (o.next || []).forEach((r, i) => ev.push({ uid: `cc-${id}-p${i}@cycleclear`, start: r[0], endExcl: ds(dn(r[1]) + 1), title: title('legendPredicted') }));
+  (o.fertile || []).forEach((r, i) => ev.push({ uid: `cc-${id}-f${i}@cycleclear`, start: r[0], endExcl: ds(dn(r[1]) + 1), title: title('sh_fertile') })); return ev; }
+async function sendFile(name, text, type) { if (N.isNative) return N.shareHtml(name, text); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); }
+const shareBase = () => N.isNative ? 'https://barood-labs.github.io/cycle-clear/' : location.origin + location.pathname;
+
+function share() { const st = S.settings, cur = st.share, hideF = ['bc', 'peri', 'preg'].includes(M());
+  shell('insights', `<div class="card clay"><h2>💞 ${t('share')}</h2><p>${t('shareIntro')}</p>
+   ${tog('f_next', true, t('sh_next'))}${hideF ? '' : tog('f_fertile', false, t('sh_fertile'))}${tog('f_phase', false, t('sh_phase'))}
+   <div class="actions"><button class="btn" id="b_ics">📅 ${t('sh_ics')}</button><button class="btn" id="b_text">💬 ${t('sh_text')}</button><button class="btn primary" id="b_code">🔐 ${t('sh_code')}</button></div>
+   <div id="codeout"></div></div>
+   <div class="card clay" id="status"><h3>${t('sh_stop')}</h3>${cur ? `<p>${t('sh_active', fmt(dn(cur.at), { dateStyle: 'medium' }))} · ${cur.kinds.map(k => t('sh_' + k)).join(', ')}</p><p class="muted">${t('sh_stopNote', fmt(dn(cur.exp), { dateStyle: 'medium' }))}</p><button class="btn danger" id="b_stop">⛔ ${t('sh_stop')}</button>` : `<p class="muted" id="notsharing">${t('sh_none')}</p>`}</div>
+   <a class="btn" href="#/insights">‹ ${t('insights')}</a>`);
+  const fields = () => ({ next: $('#f_next').checked, fertile: !!$('#f_fertile')?.checked, phase: $('#f_phase').checked });
+  const record = async (kind, o, id) => { const c = st.share || { id: id || crypto.randomUUID().slice(0, 8), kinds: [], uids: [] }; c.at = o.at; c.exp = o.exp; if (!c.kinds.includes(kind)) c.kinds.push(kind);
+    if (kind === 'ics') c.uids = [...new Set([...c.uids, ...icsEvents(o, c.id).map(e => e.uid)])]; st.share = c; await db.set('state', S); return c; };
+  const pick = () => { const f = fields(); if (!f.next && !f.fertile && !f.phase) { toast(t('sh_pick')); return null; } return shareSnapshot(f); };
+  $('#b_ics').onclick = async () => { const o = pick(); if (!o) return; const c = await record('ics', o, st.share?.id); await sendFile('cycle-clear-shared.ics', SH.ics(icsEvents(o, c.id)), 'text/calendar'); share(); };
+  $('#b_text').onclick = async () => { const o = pick(); if (!o) return; const txt = snapshotText(o); await record('text', o);
+    if (navigator.share) { try { await navigator.share({ text: txt }); } catch { } } else { await navigator.clipboard?.writeText(txt).catch(() => { }); toast(t('sh_copied')); } share(); };
+  $('#b_code').onclick = async () => { const o = pick(); if (!o) return; const pass = SH.newPass(), url = shareBase() + '#/p/' + await SH.seal(o, pass); await record('code', o);
+    const qr = await QR.toDataURL(url, { margin: 1, width: 360, color: { dark: '#3a1b2b', light: '#ffffff' } }); share();
+    $('#codeout').innerHTML = `<div class="card clay codebox"><img src="${qr}" alt="QR" class="qr"><p class="muted">${t('sh_codeNote')}</p><p>${t('sh_pass')}: <b class="pass" id="pass">${pass}</b></p>
+      <input id="shareurl" readonly value="${esc(url)}" aria-label="link"><button class="btn" id="b_copy">${t('sh_copy')}</button></div>`;
+    $('#b_copy').onclick = async () => { await navigator.clipboard?.writeText(url).catch(() => { }); toast(t('sh_copied')); }; };
+  if ($('#b_stop')) $('#b_stop').onclick = async () => { const c = st.share; if (c.uids.length) await sendFile('cycle-clear-stop-sharing.ics', SH.ics(c.uids.map(uid => ({ uid, start: c.at, endExcl: ds(dn(c.at) + 1), title: '—' })), true), 'text/calendar');
+    st.share = null; await db.set('state', S); toast(t('sh_stopped')); share(); }; }
+
+function partner(payload) { app.innerHTML = `<main class="center"><div class="card clay"><img class="hero-art small" src="icons/icon-192.png" alt=""><h1>${t('partnerTitle')}</h1>
+  <div id="pv"><label>${t('partnerEnter')}<input id="pp" autocomplete="off" autocapitalize="characters"></label><p class="err" id="perr"></p><button class="btn primary" id="po">${t('partnerOpen')}</button></div><p class="muted">${t('partnerNote')}</p></div></main>`;
+  $('#po').onclick = async () => { try { const o = await SH.open(payload, $('#pp').value); if (dn(o.exp) < dn(todayStr())) { $('#perr').textContent = t('partnerExpired'); return; }
+    $('#pv').innerHTML = snapshotHtml(o); } catch { $('#perr').textContent = t('partnerBad'); } }; }
+
+// ---------- widget + Apple Health (native only) ----------
+function syncWidget() { if (!N.isNative) return; const st = S.settings, pr = predict(S.periods, st), d = st.discreet;
+  let big = '', line = ''; if (M() === 'preg' && st.lmp) { big = String(Math.floor((dn(todayStr()) - dn(st.lmp)) / 7) + 1); line = d ? '' : t('week', +big); }
+  else if (!pr.none) { big = String(pr.onPeriod ? pr.periodDay : pr.cycleDay); line = d ? fmt(pr.next) : t('w_next', fmt(pr.next)); }
+  N.widgetSet({ big, title: d ? t('w_day', big) : (pr.onPeriod ? t('onPeriod', +big) : t('w_day', big)), line, discreet: d, onPeriod: !d && !!pr.onPeriod, updated: Date.now() }); }
+function flowDays() { const out = {}; for (const p of S.periods) { const s = dn(p.start), e = p.end ? dn(p.end) : Math.min(s + S.settings.periodLen - 1, dn(todayStr()));
+  for (let n = s; n <= e; n++) out[ds(n)] = S.days[ds(n)]?.flow || 'medium'; } for (const [d, r] of Object.entries(S.days)) if (r.flow && r.flow !== 'none') out[d] = r.flow; return out; }
+async function healthPush() { const st = S.settings; if (N.platform !== 'ios' || !st.health) return; const all = flowDays(), starts = new Set(S.periods.map(p => p.start)), todo = [];
+  for (const [d, f] of Object.entries(all)) if (st.healthPushed[d] !== f) todo.push({ date: d, flow: f, start: starts.has(d) });
+  if (!todo.length) return; if (await N.healthWrite(todo)) { for (const x of todo) st.healthPushed[x.date] = x.flow; await db.set('state', S); } }
+async function healthImport() { const rows = await N.healthRead(dn(todayStr()) - 400); let n = 0; const st = S.settings;
+  for (const r of rows.sort((a, b) => a.date < b.date ? -1 : 1)) { const inP = S.periods.some(p => dn(r.date) >= dn(p.start) && dn(r.date) <= (p.end ? dn(p.end) : dn(p.start) + 9));
+    if (!inP) { const prev = S.periods.find(p => p.end && dn(r.date) - dn(p.end) === 1); if (prev) prev.end = r.date; else S.periods.push({ start: r.date, end: r.date }); }
+    else { const p = S.periods.find(p => dn(r.date) >= dn(p.start) && dn(r.date) <= (p.end ? dn(p.end) : dn(p.start) + 9)); if (p.end && dn(r.date) > dn(p.end)) p.end = r.date; }
+    S.days[r.date] = { flow: r.flow, sym: [], mood: [], note: '', ...(S.days[r.date] || {}), flow: S.days[r.date]?.flow || r.flow }; st.healthPushed[r.date] = S.days[r.date].flow; n++; }
+  S.periods.sort((a, b) => dn(a.start) - dn(b.start)); await save(); return n; }
