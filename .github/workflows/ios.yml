@@ -3,10 +3,12 @@ on: { workflow_dispatch: { inputs: { upload: { description: 'Upload to TestFligh
 env: { APP_PROFILE: "Cycle Clear App Store v3 mvg8gl3f", WIDGET_PROFILE: "Cycle Clear Widget App Store mvg8glfa" }
 jobs:
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+      - name: Select newest Xcode (iOS 26 SDK required)
+        run: X=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1); sudo xcode-select -s "$X"; xcodebuild -version
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci && npm run build && npx cap sync ios && sed -i '' 's/\.iOS(\.v14)/.iOS(.v15)/' ios/App/CapApp-SPM/Package.swift
