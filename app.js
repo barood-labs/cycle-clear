@@ -30,7 +30,9 @@ const fmt = (n, o = { day: 'numeric', month: 'short' }) => new Intl.DateTimeForm
 const M = () => S.settings.mode || 'track', name = () => S.settings.discreet ? t('discreetName') : t('appName');
 const save = async () => { await db.set('state', S); syncReminders(); syncWidget(); healthPush(); };
 const toast = m => { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); };
-const isPro = () => { const v = S.settings.supporter; return v === 'iap' || v === LEGACY_SUPPORTER_HASH || PRO_CODE_HASHES.includes(v); }, isSup = isPro;
+// Native: if the store product can't load (e.g. IAP not live), there is no purchase UI and everything is free.
+let storeFree = N.isNative, storePrice = null;
+const isPro = () => { const v = S.settings.supporter; return storeFree || v === 'iap' || v === LEGACY_SUPPORTER_HASH || PRO_CODE_HASHES.includes(v); }, isSup = isPro;
 const lockBtn = (href, label, id) => isPro() ? `<a class="btn big" href="${href}" id="${id}">${label}</a>` : `<a class="btn big locked" href="#/pro" id="${id}">🔒 ${label} <span class="badge">${t('pro')}</span></a>`;
 const chips = (id, list, on, multi = true) => `<div class="chips" id="${id}" data-multi="${multi ? 1 : 0}">${list.map(v => `<button class="chip ${(multi ? on.includes(v) : on === v) ? 'on' : ''}" data-v="${v}">${t(v)}</button>`).join('')}</div>`;
 
@@ -188,8 +190,8 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
    <div class="card clay"><h3>${t('widget')}</h3><p class="muted">${t('widgetNote')}</p>${sup ? '' : `<p class="muted">🔒 ${t('proWidget')}</p>`}</div>
    <div class="card clay"><h3>${t('backup')}</h3><p class="muted">${t('privacy')}</p><div class="actions"><button class="btn" id="exp">${t('exportData')}</button>
     <label class="btn">${t('importData')}<input id="imp" type="file" accept="application/json,.json" hidden></label></div><button class="btn danger" id="del">${t('deleteAll')}</button></div>
-   <div class="card clay" id="supcard"><h3>✨ ${t('pro')} ${sup ? '★' : ''}</h3>${sup ? `<p>${t('proOwned')}</p><label class="row">${t('theme')}<select id="theme">${['rose', 'lavender', 'teal', 'dark'].map(x => `<option ${x === st.theme ? 'selected' : ''}>${x}</option>`).join('')}</select></label>` : `<p class="muted">${t('proPitch')}</p><a class="btn" href="#/pro" id="seepro">${t('proSee')}</a>`}</div>
-   <div class="card clay"><h3>${t('about')}</h3><p class="warn">${t('disclaimer')}</p><p class="muted">${t('widgetSoon')}</p><p class="muted"><a href="privacy.html">${t('privacyTitle')}</a> · v2.0</p></div>`);
+   ${storeFree ? `<div class="card clay" id="themecard"><label class="row">${t('theme')}<select id="theme">${['rose', 'lavender', 'teal', 'dark'].map(x => `<option ${x === st.theme ? 'selected' : ''}>${x}</option>`).join('')}</select></label></div>` : `<div class="card clay" id="supcard"><h3>✨ ${t('pro')} ${sup ? '★' : ''}</h3>${sup ? `<p>${t('proOwned')}</p><label class="row">${t('theme')}<select id="theme">${['rose', 'lavender', 'teal', 'dark'].map(x => `<option ${x === st.theme ? 'selected' : ''}>${x}</option>`).join('')}</select></label>` : `<p class="muted">${t('proPitch')}</p><a class="btn" href="#/pro" id="seepro">${t('proSee')}</a>`}</div>`}
+   <div class="card clay"><h3>${t('about')}</h3><p class="warn">${t('disclaimer')}</p><p class="muted"><a href="privacy.html">${t('privacyTitle')}</a> · v2.0</p></div>`);
   bindLang(); const sv = async () => { await save(); toast(t('saved')); };
   $('#mode').onchange = async e => { st.mode = e.target.value; if (st.mode === 'bc') st.pill.on = true; await sv(); settings(); };
   if ($('#lmp')) $('#lmp').onchange = async e => { st.lmp = e.target.value; await sv(); };
@@ -220,6 +222,7 @@ function route() { applyLang(); const pm = location.hash.match(/^#\/p\/(c1\.[\w-
 
 (async () => { if (/^#\/p\/c1\./.test(location.hash)) { addEventListener('hashchange', route); return route(); } try { const s = await db.get('state'); if (s) S = { ...S, ...s, settings: { ...structuredClone(DEF), ...s.settings, pill: { ...DEF.pill, ...s.settings?.pill }, rem: { ...DEF.rem, ...s.settings?.rem } } }; } catch (e) { console.warn(e); }
   addEventListener('hashchange', route); route(); syncReminders();
+  if (N.isNative) { const p = await Promise.race([N.iapPrice(), new Promise(r => setTimeout(() => r(null), 6000))]); if (p) { storePrice = p; storeFree = false; route(); syncWidget(); } }
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !N.isNative) navigator.serviceWorker.register('sw.js'); })();
 
 // ---------- partner sharing (no server) ----------
@@ -284,7 +287,7 @@ async function healthImport() { const rows = await N.healthRead(dn(todayStr()) -
   S.periods.sort((a, b) => dn(a.start) - dn(b.start)); await save(); return n; }
 
 // ---------- Pro (one-time, gentle: shown only when the user opens it or taps a Pro feature) ----------
-function pro() { const st = S.settings, owned = isPro(), native = N.isNative, rid = Math.random().toString(36).slice(2, 8).toUpperCase();
+function pro() { if (storeFree) { location.replace('#/settings'); return settings(); } const st = S.settings, owned = isPro(), native = N.isNative, rid = Math.random().toString(36).slice(2, 8).toUpperCase();
   const mail = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('pcosMailSubj'))}&body=${encodeURIComponent(t('pcosMailBody', rid))}`;
   shell('settings', `<div class="card clay pro"><h2>✨ ${t('proTitle')}</h2><p><b>${t('proPitch')}</b></p><p>✅ ${t('proFree')}</p><p>✨ ${t('proIncl')}</p>
    ${owned ? `<p class="okmsg" id="proowned">${t('proOwned')}</p>` : native ? `<button class="btn primary big" id="iap">${t('proBuy', PRO_PRICE)}</button><button class="btn" id="restore">${t('restore')}</button>`
@@ -294,5 +297,5 @@ function pro() { const st = S.settings, owned = isPro(), native = N.isNative, ri
    <a class="btn" href="#/settings">‹ ${t('settings')}</a>`);
   const done = async v => { st.supporter = v; await save(); applyLang(); toast(t('proOwned')); pro(); };
   if ($('#redeem')) $('#redeem').onclick = async () => { const h = await sha($('#code').value.trim().toUpperCase()); if (PRO_CODE_HASHES.includes(h) || h === LEGACY_SUPPORTER_HASH) done(h); else { $('#cmsg').className = 'err'; $('#cmsg').textContent = t('badCode'); } };
-  if ($('#iap')) { N.iapPrice().then(p => p && ($('#iap').textContent = t('proBuy', p))); $('#iap').onclick = async () => { if (await N.iapBuy()) done('iap'); };
+  if ($('#iap')) { $('#iap').textContent = t('proBuy', storePrice); $('#iap').onclick = async () => { if (await N.iapBuy()) done('iap'); };
     $('#restore').onclick = async () => { if (await N.iapRestore()) done('iap'); }; } }
