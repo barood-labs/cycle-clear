@@ -19,11 +19,12 @@ jobs:
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath $RUNNER_TEMP/sim CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E "error:|BUILD" || true
           APP=$(ls -d $RUNNER_TEMP/sim/Build/Products/Debug-iphonesimulator/App.app)
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print([x['udid'] for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']][-1])")
-          xcrun simctl boot $UDID; xcrun simctl bootstatus $UDID -b >/dev/null
-          xcrun simctl install $UDID "$APP"; xcrun simctl launch $UDID com.baroodlabs.cycleclear; sleep 20
-          mkdir -p sim; xcrun simctl io $UDID screenshot sim/launch.png
+          mkdir -p sim; xcrun simctl boot $UDID; xcrun simctl bootstatus $UDID -b >/dev/null
+          xcrun simctl install $UDID "$APP"; ( xcrun simctl launch --console-pty $UDID com.baroodlabs.cycleclear > sim/console.txt 2>&1 & ); sleep 25
+          xcrun simctl io $UDID screenshot sim/launch.png
           xcrun simctl spawn $UDID launchctl list | grep -i cycleclear && echo "SIM_ALIVE" || echo "SIM_NOT_RUNNING"
           xcrun simctl spawn $UDID log show --last 2m --predicate 'process == "App"' --style compact 2>/dev/null | grep -iE "fatal|crash|exception|error|capacitor|⚡" | head -60 || true
+          echo '--- console'; grep -v '^\s*$' sim/console.txt | head -80 || true
           ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i App && cat ~/Library/Logs/DiagnosticReports/App*.ips 2>/dev/null | head -120 || true
       - uses: actions/upload-artifact@v4
         if: always()
