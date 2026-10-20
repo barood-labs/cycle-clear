@@ -224,7 +224,7 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
 function route() { applyLang(); const pm = location.hash.match(/^#\/p\/(c1\.[\w-]+)/); if (pm) return partner(pm[1]); if (!S.settings.accepted) return onboarding(); if (S.settings.pinHash && !unlocked) return lock();
   const r = (location.hash.match(/#\/(\w+)/) || [])[1]; ({ calendar, insights, settings, report, share }[r] || today)(); window.scrollTo(0, 0); }
 
-(async () => { try { const s = await db.get('state'); if (s) S = { ...S, ...s, settings: { ...structuredClone(DEF), ...s.settings, pill: { ...DEF.pill, ...s.settings?.pill }, rem: { ...DEF.rem, ...s.settings?.rem } } }; } catch (e) { console.warn(e); }
+(async () => { if (/^#\/p\/c1\./.test(location.hash)) { addEventListener('hashchange', route); return route(); } try { const s = await db.get('state'); if (s) S = { ...S, ...s, settings: { ...structuredClone(DEF), ...s.settings, pill: { ...DEF.pill, ...s.settings?.pill }, rem: { ...DEF.rem, ...s.settings?.rem } } }; } catch (e) { console.warn(e); }
   addEventListener('hashchange', route); route(); syncReminders();
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !N.isNative) navigator.serviceWorker.register('sw.js'); })();
 
