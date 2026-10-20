@@ -19,7 +19,7 @@ const detect = () => { const q = new URLSearchParams(location.search).get('lang'
   if (S.settings.lang && LANGS[S.settings.lang]) return S.settings.lang;
   for (const l of navigator.languages || [navigator.language]) { const p = (l || '').slice(0, 2).toLowerCase(); if (LANGS[p]) return p; } return 'en'; };
 const arDays = n => n >= 3 && n <= 10 ? 'أيام' : 'يومًا';
-const t = (k, n, x = {}) => { let s = T2[lang]?.[k] ?? T[lang]?.[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace('يوم', arDays(n));
+const t = (k, n, x = {}) => { let s = T2[lang]?.[k] ?? T[lang]?.[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace(/(^|\s)يوم(?=\s|$)/u, (m0, a) => a + arDays(n));
   s = s.replace('{n}', n); for (const [a, b] of Object.entries(x)) s = s.replace(`{${a}}`, b); return s; };
 const loc = () => lang + '-u-nu-latn';
 const fmt = (n, o = { day: 'numeric', month: 'short' }) => new Intl.DateTimeFormat(loc(), { timeZone: 'UTC', ...o }).format(new Date(n * 864e5));

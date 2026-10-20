@@ -16,7 +16,7 @@ for (const lang of ['en', 'ar', 'ur']) for (const vp of ['mobile', 'desktop']) {
     const r = await p.goto(`${U}?lang=${lang}`); ok(tag + ' 200', r.status() === 200); await p.waitForSelector('#accept');
     ok(tag + ' dir', (await p.getAttribute('html', 'dir')) === (lang === 'en' ? 'ltr' : 'rtl'));
     ok(tag + ' disclaimer shown', (await p.textContent('#disc')).length > 50); await shot('1_onboarding');
-    await p.click('#accept'); await p.waitForSelector('#mark'); await shot('2_today_empty');
+    await p.click('#accept'); await p.waitForSelector('.mode'); await shot('1b_goal'); await p.click('.mode[data-m=track]'); await p.click('#go'); await p.waitForSelector('#mark'); await shot('2_today_empty');
     await p.click('#mark'); await p.waitForSelector('#big'); ok(tag + ' start today -> period day 1', (await p.textContent('#big')).includes('1'));
     await p.click('[data-tab=settings]'); await p.waitForSelector('#imp', { state: 'attached' }); await p.setInputFiles('#imp', '/tmp/cc_sample.json'); await p.waitForTimeout(400);
     await p.click('[data-tab=today]'); await p.waitForSelector('#next'); await shot('3_today');
@@ -25,7 +25,18 @@ for (const lang of ['en', 'ar', 'ur']) for (const vp of ['mobile', 'desktop']) {
     await shot('4_calendar'); await p.click(`.day[data-d="${day(-12)}"]`).catch(async () => { await p.click('#prev'); await p.click(`.day[data-d="${day(-12)}"]`); });
     await p.waitForSelector('#sv'); ok(tag + ' note escaped', (await p.inputValue('#note')).includes('<b>'));
     await p.click('#sym .chip[data-v=headache]'); await shot('5_day_sheet'); await p.click('#sv'); await p.waitForTimeout(300);
-    await p.click('[data-tab=insights]'); await p.waitForSelector('.hist'); ok(tag + ' history rows', (await p.$$('.hist li')).length === 4); await shot('6_insights');
+    await p.click('[data-tab=insights]'); await p.waitForSelector('.hist'); ok(tag + ' history rows', (await p.$$('.hist li')).length === 4); ok(tag + ' patterns', (await p.$$('.phase')).length >= 1); await shot('6_insights');
+    await p.click('#rep'); await p.waitForSelector('.report'); ok(tag + ' report', (await p.$$('.report .hist li')).length === 4); await shot('6b_report'); await p.click('a[href="#/insights"]');
+    await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'pcos'); await p.waitForTimeout(300); await p.click('[data-tab=today]'); await p.waitForSelector('#next');
+    ok(tag + ' pcos range', (await p.$$('.hint')).length === 1); await shot('3b_today_pcos');
+    await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'bc'); await p.waitForTimeout(300); await p.click('[data-tab=today]'); await p.waitForSelector('#pillbtn');
+    ok(tag + ' bc hides fertile', (await p.$$('.fert')).length === 0); await p.click('#pillbtn'); await p.waitForSelector('#pillbtn[aria-pressed=true]'); await shot('3c_today_pill');
+    await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'ttc'); await p.waitForTimeout(300); await p.click('[data-tab=calendar]'); await p.click(`.day[data-d="${day(-1)}"]`).catch(async () => { await p.click('#prev'); await p.click(`.day[data-d="${day(-1)}"]`); });
+    await p.waitForSelector('#bbt'); await p.fill('#bbt', '36.6'); await shot('5b_day_ttc'); await p.click('#sv'); await p.waitForTimeout(300);
+    await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'preg'); await p.waitForSelector('#lmp'); await p.fill('#lmp', day(-70)); await p.dispatchEvent('#lmp', 'change'); await p.waitForTimeout(300);
+    await p.click('[data-tab=today]'); await p.waitForSelector('#big'); ok(tag + ' preg week 11', (await p.textContent('#big')).includes('11')); await shot('3d_today_preg');
+    await p.click('[data-tab=settings]'); await p.waitForSelector('#mode'); await p.selectOption('#mode', 'track'); await p.waitForTimeout(300);
+    await p.click('#discreet'); await p.waitForTimeout(300); ok(tag + ' discreet name', !(await p.textContent('header h1')).includes('Cycle')); await p.click('#discreet'); await p.waitForTimeout(300);
     await p.click('[data-tab=settings]'); await p.waitForSelector('#exp');
     const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#exp')]); const f = `/tmp/cc_${tag}.json`; await dl.saveAs(f);
     ok(tag + ' export valid', JSON.parse(fs.readFileSync(f, 'utf8')).periods.length === 4);

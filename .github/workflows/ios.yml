@@ -1,0 +1,47 @@
+name: iOS build → TestFlight
+on: { workflow_dispatch: { inputs: { upload: { description: 'Upload to TestFlight', type: boolean, default: true } } } }
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci && npm run build && npx cap sync ios
+      - name: Install signing (from encrypted secrets; nothing echoed)
+        env: { P12: "${{ secrets.IOS_P12_B64 }}", P12_PASS: "${{ secrets.IOS_P12_PASS }}", PROFILE: "${{ secrets.IOS_PROFILE_B64 }}" }
+        run: |
+          set +x
+          KC=$RUNNER_TEMP/build.keychain-db; KP=$(uuidgen)
+          echo "$P12" | base64 --decode > $RUNNER_TEMP/dist.p12
+          security create-keychain -p "$KP" $KC && security set-keychain-settings -lut 3600 $KC && security unlock-keychain -p "$KP" $KC
+          security import $RUNNER_TEMP/dist.p12 -P "$P12_PASS" -A -t cert -f pkcs12 -k $KC
+          security set-key-partition-list -S apple-tool:,apple: -k "$KP" $KC >/dev/null
+          security list-keychain -d user -s $KC
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/cycleclear.mobileprovision
+          rm $RUNNER_TEMP/dist.p12
+      - name: Archive
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath $RUNNER_TEMP/App.xcarchive CURRENT_PROJECT_VERSION=${{ github.run_number }} archive | tail -40
+      - name: Export IPA
+        run: |
+          cat > $RUNNER_TEMP/export.plist <<PL
+          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>3S2B5CZC84</string><key>signingStyle</key><string>manual</string>
+          <key>provisioningProfiles</key><dict><key>com.baroodlabs.cycleclear</key><string>Cycle Clear App Store</string></dict><key>uploadSymbols</key><true/></dict></plist>
+          PL
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist -exportPath $RUNNER_TEMP/out | tail -20
+          ls -la $RUNNER_TEMP/out
+      - name: Upload to TestFlight (no review, no release)
+        if: ${{ inputs.upload }}
+        env: { KEY: "${{ secrets.ASC_KEY_P8_B64 }}", KID: "${{ secrets.ASC_KEY_ID }}", ISS: "${{ secrets.ASC_ISSUER_ID }}" }
+        run: |
+          set +x; mkdir -p ~/.appstoreconnect/private_keys
+          echo "$KEY" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_$KID.p8
+          xcrun altool --upload-app -f $RUNNER_TEMP/out/*.ipa -t ios --apiKey "$KID" --apiIssuer "$ISS"
+          rm -f ~/.appstoreconnect/private_keys/AuthKey_$KID.p8
+      - if: always()
+        run: security delete-keychain $RUNNER_TEMP/build.keychain-db || true

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-200 -170 1424 1424" width="1024" height="1024"><defs>
+ <radialGradient id="clayPink" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ffd3e2"/><stop offset=".45" stop-color="#f77fa8"/><stop offset="1" stop-color="#c2185b"/></radialGradient>
+ <radialGradient id="clayLilac" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#f1e6ff"/><stop offset=".5" stop-color="#b9a0f0"/><stop offset="1" stop-color="#7a5bd0"/></radialGradient>
+ <radialGradient id="clayMint" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#e2fbf6"/><stop offset=".5" stop-color="#7fd8c8"/><stop offset="1" stop-color="#22998a"/></radialGradient>
+ <radialGradient id="clayCream" cx="35%" cy="25%" r="85%"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#fff3f7"/><stop offset="1" stop-color="#f2cfdc"/></radialGradient>
+ <radialGradient id="clayPeach" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#fff0e2"/><stop offset=".5" stop-color="#ffbe94"/><stop offset="1" stop-color="#e5845a"/></radialGradient>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe6f0"/><stop offset=".55" stop-color="#f6d9ff"/><stop offset="1" stop-color="#e0d4ff"/></linearGradient>
+ <radialGradient id="gloss" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <filter id="soft" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="18"/><feOffset dy="26"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feFlood flood-color="#7a2350"/><feComposite operator="in" in2="SourceAlpha"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="190%"><feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#8a2a5a" flood-opacity=".28"/></filter>
+ <filter id="inner"><feGaussianBlur in="SourceAlpha" stdDeviation="10"/><feOffset dx="-8" dy="-10"/><feComposite operator="arithmetic" k2="-1" k3="1" in2="SourceAlpha"/><feFlood flood-color="#7a1040" flood-opacity=".35"/><feComposite operator="in" in2="SourceGraphic"/><feComposite operator="over" in2="SourceGraphic"/></filter>
+<filter id="innerLight"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dx="-6" dy="-12"/><feComposite operator="arithmetic" k2="-1" k3="1" in2="SourceAlpha"/><feFlood flood-color="#e8a9c2" flood-opacity=".45"/><feComposite operator="in" in2="SourceGraphic"/><feComposite operator="over" in2="SourceGraphic"/></filter>
+</defs>
+
+<g filter="url(#shadow)"><path d="M512 170 C512 170 300 420 300 590 C300 712 395 806 512 806 C629 806 724 712 724 590 C724 420 512 170 512 170 Z" fill="url(#clayPink)" filter="url(#inner)"/></g>
+<ellipse cx="430" cy="470" rx="58" ry="110" transform="rotate(28 430 470)" fill="url(#gloss)" opacity=".85"/>
+<circle cx="512" cy="600" r="118" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-dasharray="560 200" transform="rotate(-100 512 600)" opacity=".95"/>
+<circle cx="512" cy="600" r="34" fill="url(#clayCream)"/>
+</svg>

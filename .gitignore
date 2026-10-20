@@ -1,3 +1,11 @@
 private/
 node_modules/
 node_modules
+www/
+ios/App/App/public/
+android/app/src/main/assets/public/
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
