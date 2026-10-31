@@ -7,13 +7,14 @@ import * as db from './db.js';
 import { predict, dayKind, dn, ds, todayStr, range, phaseOf } from './cycle.js';
 import { PRO_URL, PRO_PRICE, PRO_CODE_HASHES, LEGACY_SUPPORTER_HASH, SUPPORT_EMAIL } from './config.js';
 import { T4 } from './i18n4.js';
+import { T5 } from './i18n5.js';
 import * as N from './native.js';
 
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)], app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const DEF = { lang: '', cycleLen: 28, periodLen: 5, accepted: false, mode: '', supporter: '', theme: 'rose', pinHash: '', pinSalt: '', lmp: '',
-  pill: { on: false, time: '21:00' }, rem: { period: true, pill: true, fertile: false, time: '09:00' }, discreet: false, bio: false, health: false, healthPushed: {}, share: null };
+  pill: { on: false, time: '21:00' }, rem: { period: true, pill: true, fertile: false, time: '09:00' }, discreet: false, plainIcon: false, rated: false, bio: false, health: false, healthPushed: {}, share: null };
 const MODES = ['track', 'bc', 'pcos', 'ttc', 'preg', 'peri'], MODE_ICON = { track: '🌸', bc: '💊', pcos: '🌀', ttc: '🌱', preg: '🤰', peri: '🌙' };
 const BASE_SYM = ['cramps', 'headache', 'bloating', 'breasts', 'backPain', 'acne', 'tired', 'cravings', 'nausea', 'insomnia', 'spotting'];
 const MOODS = ['happy', 'calm', 'energetic', 'sad', 'anxious', 'irritable'];
@@ -23,18 +24,20 @@ const detect = () => { const q = new URLSearchParams(location.search).get('lang'
   if (S.settings.lang && LANGS[S.settings.lang]) return S.settings.lang;
   for (const l of navigator.languages || [navigator.language]) { const p = (l || '').slice(0, 2).toLowerCase(); if (LANGS[p]) return p; } return 'en'; };
 const arDays = n => n >= 3 && n <= 10 ? 'أيام' : 'يومًا';
-const t = (k, n, x = {}) => { let s = T4[lang]?.[k] ?? T3[lang]?.[k] ?? T2[lang]?.[k] ?? T[lang]?.[k] ?? T4.en[k] ?? T3.en[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace(/(^|\s)يوم(?=\s|$)/u, (m0, a) => a + arDays(n));
+const t = (k, n, x = {}) => { let s = T5[lang]?.[k] ?? T4[lang]?.[k] ?? T3[lang]?.[k] ?? T2[lang]?.[k] ?? T[lang]?.[k] ?? T5.en[k] ?? T4.en[k] ?? T3.en[k] ?? T2.en[k] ?? T.en[k] ?? k; if (lang === 'ar' && typeof n === 'number') s = s.replace(/(^|\s)يوم(?=\s|$)/u, (m0, a) => a + arDays(n));
   s = s.replace('{n}', n); for (const [a, b] of Object.entries(x)) s = s.replace(`{${a}}`, b); return s; };
 const loc = () => lang + '-u-nu-latn';
 const fmt = (n, o = { day: 'numeric', month: 'short' }) => new Intl.DateTimeFormat(loc(), { timeZone: 'UTC', ...o }).format(new Date(n * 864e5));
 const M = () => S.settings.mode || 'track', name = () => S.settings.discreet ? t('discreetName') : t('appName');
-const save = async () => { await db.set('state', S); syncReminders(); syncWidget(); healthPush(); };
+const save = async () => { await db.set('state', S); syncReminders(); syncWidget(); healthPush(); maybeAskRating(); };
+// v1.1: ask Apple's rating sheet once, after the 2nd logged period start. Apple itself caps display at 3x/365 days.
+async function maybeAskRating() { if (!N.isNative || S.settings.rated || S.periods.length < 2) return; S.settings.rated = true; await db.set('state', S); setTimeout(() => N.requestReview(), 1500); }
 const toast = m => { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); };
 // Native: if the store product can't load (e.g. IAP not live), there is no purchase UI and everything is free.
 let storeFree = N.isNative, storePrice = null;
 const isPro = () => { const v = S.settings.supporter; return storeFree || v === 'iap' || v === LEGACY_SUPPORTER_HASH || PRO_CODE_HASHES.includes(v); }, isSup = isPro;
 const lockBtn = (href, label, id) => isPro() ? `<a class="btn big" href="${href}" id="${id}">${label}</a>` : `<a class="btn big locked" href="#/pro" id="${id}">🔒 ${label} <span class="badge">${t('pro')}</span></a>`;
-const chips = (id, list, on, multi = true) => `<div class="chips" id="${id}" data-multi="${multi ? 1 : 0}">${list.map(v => `<button class="chip ${(multi ? on.includes(v) : on === v) ? 'on' : ''}" data-v="${v}">${t(v)}</button>`).join('')}</div>`;
+const chips = (id, list, on, multi = true) => `<div class="chips" id="${id}" role="group" aria-label="${esc(t({ flow: 'flow', mood: 'mood_', sym: 'symptoms', ovt: 'ovTest' }[id] || id))}" data-multi="${multi ? 1 : 0}">${list.map(v => `<button type="button" class="chip ${(multi ? on.includes(v) : on === v) ? 'on' : ''}" data-v="${v}" aria-pressed="${(multi ? on.includes(v) : on === v) ? 'true' : 'false'}" aria-label="${esc(t(v))}">${t(v)}</button>`).join('')}</div>`;
 
 function applyLang() { lang = detect(); const h = document.documentElement; h.lang = lang; h.dir = RTL.includes(lang) ? 'rtl' : 'ltr';
   document.title = name(); document.body.dataset.theme = isSup() ? S.settings.theme : 'rose'; }
@@ -47,7 +50,7 @@ const shell = (cur, body) => { app.innerHTML = `<header><div class="brand">${S.s
 // ---------- reminders (native only) ----------
 function syncReminders() { if (!N.isNative || !S.settings.accepted) return; const st = S.settings, r = st.rem, pr = predict(S.periods, st), out = [];
   const [h, m] = r.time.split(':').map(Number), at = n => new Date(Date.UTC(1970, 0, 1) + n * 864e5 + (h * 60 + m) * 6e4 + new Date().getTimezoneOffset() * 6e4);
-  const T_ = k => st.discreet ? t('remDiscreet') : t(k), title = st.discreet ? t('remDiscreet') : t('remTitle');
+  const T_ = k => st.discreet ? t('remCheck') : t(k), title = st.discreet ? t('discreetName') : t('remTitle');
   if (!pr.none && M() !== 'preg') { if (r.period) out.push({ id: 1, title, body: T_('r_period'), at: at(pr.next - 2) });
     if (r.fertile && !['bc', 'peri'].includes(M())) { const f = pr.future.find(f => f.fs > dn(todayStr())); if (f) out.push({ id: 2, title, body: T_('r_fertile'), at: at(f.fs) }); } }
   if (st.pill.on && r.pill) { const [ph, pm] = st.pill.time.split(':').map(Number); out.push({ id: 3, title, body: T_('r_pill'), daily: { hour: ph, minute: pm } }); }
@@ -111,7 +114,7 @@ function calendar() { const td = todayStr(); if (!calMonth) calMonth = td.slice(
   let cells = '<div></div>'.repeat(lead);
   for (let d = 1; d <= dim; d++) { const s = ds(first + d - 1); let k = dayKind(s, S.periods, pr); if (hideF && (k === 'fertile' || k === 'ovulation')) k = ''; if (m === 'preg' && k === 'predicted') k = '';
     const has = S.days[s] && (S.days[s].flow || S.days[s].sym?.length || S.days[s].note || S.days[s].mood?.length) ? ' has' : '', pill = S.days[s]?.pill ? ' pilled' : '';
-    cells += `<button class="day ${k}${s === td ? ' now' : ''}${has}${pill}" data-d="${s}" aria-label="${fmt(first + d - 1, { dateStyle: 'full' })} ${k ? t('legend' + { period: 'Period', predicted: 'Predicted', fertile: 'Fertile', ovulation: 'Ovulation' }[k]) : ''}">${d}</button>`; }
+    cells += `<button class="day ${k}${s === td ? ' now' : ''}${has}${pill}" data-d="${s}" aria-label="${fmt(first + d - 1, { dateStyle: 'full' })} ${k ? t('legend' + { period: 'Period', predicted: 'Predicted', fertile: 'Fertile', ovulation: 'Ovulation' }[k]) : ''}${s === td ? ', ' + t('a_today') : ''}${has ? ', ' + t('a_logged') : ''}${pill ? ', ' + t('a_pill') : ''}">${d}</button>`; }
   shell('calendar', `<div class="card clay"><div class="calhead"><button class="btn icon" id="prev" aria-label="prev">‹</button><h2>${fmt(first, { month: 'long', year: 'numeric' })}</h2><button class="btn icon" id="nextm" aria-label="next">›</button></div>
    <div class="cal"><div class="wd">${wd.map(w => `<span>${w}</span>`).join('')}</div><div class="days">${cells}</div></div>
    <div class="legend"><span class="k period"></span>${t('legendPeriod')}<span class="k predicted"></span>${t('legendPredicted')}${hideF ? '' : `<span class="k fertile"></span>${t('legendFertile')}<span class="k ovulation"></span>${t('legendOvulation')}`}</div></div><div id="sheet"></div>`);
@@ -132,7 +135,7 @@ function sheet(d) { const td = todayStr(), fut = dn(d) > dn(td), m = M(), rec = 
    ${S.settings.pill.on ? chips('pillc', ['pill'], rec.pill ? ['pill'] : []) : ''}
    <label>${t('notes')}<textarea id="note" rows="2" maxlength="500">${esc(rec.note)}</textarea></label><button class="btn primary" id="sv">${t('save')}</button>`}</div>`;
   if (fut) return; $('#sheet').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  $$('#sheet .chips').forEach(c => c.onclick = e => { const v = e.target.dataset.v; if (!v) return; if (c.dataset.multi === '1') e.target.classList.toggle('on'); else c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === e.target && !x.classList.contains('on'))); });
+  $$('#sheet .chips').forEach(c => c.onclick = e => { const v = e.target.dataset.v; if (!v) return; if (c.dataset.multi === '1') e.target.classList.toggle('on'); else c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === e.target && !x.classList.contains('on'))); c.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.classList.contains('on'))); });
   const sel = id => $$(`#${id} .chip.on`).map(c => c.dataset.v);
   $('#sv').onclick = async () => { const r = { flow: sel('flow')[0] || '', sym: sel('sym'), mood: sel('mood'), note: $('#note').value };
     if ($('#ovt')) { r.ovt = sel('ovt')[0] || ''; r.bbt = $('#bbt').value; r.sex = sel('sexc').length > 0; } if ($('#pillc')) r.pill = sel('pillc').length > 0; else if (rec.pill) r.pill = true;
@@ -184,7 +187,7 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
     <label class="row">${t('r_time')}<input type="time" id="remtime" value="${st.rem.time}"></label></div>
    <div class="card clay"><h3>${t('pin')}</h3><p class="muted">${t('pinNote')}</p>${st.pinHash ? `<button class="btn" id="rmpin">${t('removePin')}</button>${bioOk ? tog('bio', st.bio, t('faceid')) : ''}` :
     `<div class="actions"><input id="np" type="password" inputmode="numeric" maxlength="8" placeholder="${t('newPin')}" aria-label="${t('newPin')}"><button class="btn" id="setpin">${t('setPin')}</button></div>`}
-    ${tog('discreet', st.discreet, t('discreet'))}<p class="muted">${t('discreetNote')}</p></div>
+    ${tog('discreet', st.discreet, t('discreet'))}<p class="muted">${t('discreetNote')}</p>${N.platform === 'ios' ? `${tog('plainicon', st.plainIcon, t('plainIcon'))}<p class="muted">${t('plainIconNote')}</p>` : ''}</div>
    <div class="card clay" id="healthcard"><h3>❤️ ${t('health')}</h3><p class="muted">${t('healthNote')}</p>${N.platform === 'ios' ? `${tog('hk', st.health, t('healthOn'))}${st.health ? `<button class="btn" id="hkimp">${t('healthImport')}</button>` : ''}` : `<p class="muted"><i>${t('healthWeb')}</i></p>`}</div>
    <div class="card clay"><h3>${t('share')}</h3><p class="muted">${t('shareIntro')}</p><a class="btn" href="${sup ? '#/share' : '#/pro'}">${sup ? '' : '🔒 '}💞 ${t('share')}</a></div>
    <div class="card clay"><h3>${t('widget')}</h3><p class="muted">${t('widgetNote')}</p>${sup ? '' : `<p class="muted">🔒 ${t('proWidget')}</p>`}</div>
@@ -202,6 +205,7 @@ async function settings() { const st = S.settings, sup = isSup(), bioOk = await 
   for (const k of ['period', 'pill', 'fertile']) if ($('#r_' + k)) $('#r_' + k).onchange = async e => { st.rem[k] = e.target.checked; await sv(); };
   $('#remtime').onchange = async e => { st.rem.time = e.target.value || '09:00'; await sv(); };
   $('#discreet').onchange = async e => { st.discreet = e.target.checked; await sv(); applyLang(); settings(); };
+  if ($('#plainicon')) $('#plainicon').onchange = async e => { st.plainIcon = e.target.checked; await N.setPlainIcon(st.plainIcon); await sv(); };
   if ($('#hk')) $('#hk').onchange = async e => { if (e.target.checked && !(await N.healthAuth())) { e.target.checked = false; return toast(t('healthDenied')); } st.health = e.target.checked; st.healthPushed = {}; await sv(); settings(); };
   if ($('#hkimp')) $('#hkimp').onclick = async () => { const n = await healthImport(); toast(t('healthImported', n)); };
   if ($('#bio')) $('#bio').onchange = async e => { st.bio = e.target.checked; await sv(); };

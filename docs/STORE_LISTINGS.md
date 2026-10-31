@@ -1,4 +1,5 @@
 # Store listings (draft — not submitted)
+> v1.1: new subtitles, keywords, promo text and What's New for EN/AR/ES/FR/PT are in store/v1.1/METADATA.md (they replace the Subtitle/Keywords lines below when 1.1 ships).
 Category: Health & Fitness (iOS) / Health & Fitness (Play). Age rating: 12+/Teen (medical info, reference only). Price: Free. In-app: Virabloom Pro, one-time $9.99 (non-consumable, no subscription). Free Pro for PCOS on request.
 Content rating & Play Data safety: **No data collected, no data shared.**
 

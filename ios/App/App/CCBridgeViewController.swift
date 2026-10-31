@@ -6,5 +6,6 @@ class CCBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CCHealthPlugin())
         bridge?.registerPluginInstance(CCWidgetPlugin())
+        bridge?.registerPluginInstance(CCAppPlugin())
     }
 }

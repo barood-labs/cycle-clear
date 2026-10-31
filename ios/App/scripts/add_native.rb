@@ -3,7 +3,7 @@ require 'xcodeproj'
 proj = Xcodeproj::Project.open(File.join(__dir__, '..', 'App.xcodeproj'))
 app = proj.targets.find { |t| t.name == 'App' }
 grp = proj.main_group['App']
-%w[CCBridgeViewController.swift CCHealthPlugin.swift CCWidgetPlugin.swift CCShared.swift].each do |f|
+%w[CCBridgeViewController.swift CCHealthPlugin.swift CCWidgetPlugin.swift CCShared.swift CCAppPlugin.swift].each do |f|
   next if grp.files.any? { |x| x.path == f }
   app.add_file_references([grp.new_file(f)])
 end
@@ -12,6 +12,8 @@ app.add_system_framework('HealthKit') unless app.frameworks_build_phase.files.an
 app.build_configurations.each do |c|
   s = c.build_settings
   s['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+  s['ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES'] = 'AppIcon-Plain'; s['ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS'] = 'YES'
+  s['MARKETING_VERSION'] = '1.1'
   s['CODE_SIGN_STYLE'] = 'Manual'; s['DEVELOPMENT_TEAM'] = '3S2B5CZC84'
   s['PROVISIONING_PROFILE_SPECIFIER'] = ENV.fetch('APP_PROFILE'); s['CODE_SIGN_IDENTITY[sdk=iphoneos*]'] = 'Apple Distribution'
 end
@@ -23,7 +25,7 @@ unless proj.targets.any? { |t| t.name == 'CycleWidget' }
   w.build_configurations.each do |c|
     s = c.build_settings
     s.merge!('PRODUCT_BUNDLE_IDENTIFIER' => 'com.baroodlabs.cycleclear.widget', 'INFOPLIST_FILE' => 'CycleWidget/Info.plist', 'CODE_SIGN_ENTITLEMENTS' => 'CycleWidget/CycleWidget.entitlements',
-      'SWIFT_VERSION' => '5.0', 'TARGETED_DEVICE_FAMILY' => '1', 'DEVELOPMENT_TEAM' => '3S2B5CZC84', 'CODE_SIGN_STYLE' => 'Manual', 'PROVISIONING_PROFILE_SPECIFIER' => ENV.fetch('WIDGET_PROFILE'), 'CODE_SIGN_IDENTITY[sdk=iphoneos*]' => 'Apple Distribution', 'MARKETING_VERSION' => '1.0',
+      'SWIFT_VERSION' => '5.0', 'TARGETED_DEVICE_FAMILY' => '1', 'DEVELOPMENT_TEAM' => '3S2B5CZC84', 'CODE_SIGN_STYLE' => 'Manual', 'PROVISIONING_PROFILE_SPECIFIER' => ENV.fetch('WIDGET_PROFILE'), 'CODE_SIGN_IDENTITY[sdk=iphoneos*]' => 'Apple Distribution', 'MARKETING_VERSION' => '1.1',
       'CURRENT_PROJECT_VERSION' => '1', 'GENERATE_INFOPLIST_FILE' => 'NO', 'SKIP_INSTALL' => 'YES', 'PRODUCT_NAME' => 'CycleWidget', 'IPHONEOS_DEPLOYMENT_TARGET' => '15.0',
       'LD_RUNPATH_SEARCH_PATHS' => '$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks')
   end

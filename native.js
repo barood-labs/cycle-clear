@@ -21,3 +21,7 @@ export async function healthAuth() { try { return (await HK.requestAuth()).grant
 export async function healthWrite(days) { try { await HK.writeFlow({ days }); return true; } catch (e) { console.warn(e); return false; } }
 export async function healthRead(sinceDayNumber) { try { return (await HK.readFlow({ since: new Date(sinceDayNumber * 864e5).toISOString().slice(0, 10) })).days || []; } catch { return []; } }
 export async function widgetSet(data) { try { await WG?.setData({ json: JSON.stringify(data) }); } catch { } }
+const APP = platform === 'ios' ? P('CCApp') : null;
+// v1.1: Apple's rating sheet (Apple rate-limits it; we ask at most once ever) and the plain alternate icon.
+export async function requestReview() { try { await APP?.requestReview(); return !!APP; } catch { return false; } }
+export async function setPlainIcon(plain) { try { return !!(await APP?.setIcon({ plain }))?.changed; } catch (e) { console.warn(e); return false; } }
